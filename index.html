@@ -198,6 +198,11 @@ footer{padding:10px 16px calc(12px + env(safe-area-inset-bottom,0px)); color:#6f
           <span class="hint">or tap / drag the pin — for apartments, pin the building entrance</span>
         </div>
         <div class="hint" id="coordStatus" style="margin-top:6px">No pin set yet</div>
+        <div class="locrow" style="margin-top:10px">
+          <input type="text" id="coordPaste" placeholder="Not home? Paste Google Maps coordinates here" autocomplete="off" style="flex:1; min-width:180px">
+          <button type="button" class="btn btn-ghost" id="coordBtn">Set pin</button>
+        </div>
+        <div class="hint" style="margin-top:6px">In Google Maps: press and hold on your home → tap the coordinates that appear → copy → paste here.</div>
       </div>
       <div class="field">
         <label for="passcode">Group passcode</label>
@@ -493,6 +498,26 @@ function initPickMap(){
 }
 document.getElementById("village").addEventListener("change", function(){
   document.getElementById("villageOther").style.display = this.value === "__other" ? "" : "none";
+});
+document.getElementById("coordBtn").addEventListener("click", function(){
+  var raw = document.getElementById("coordPaste").value.trim();
+  if (!raw) { toast("Paste coordinates or a Google Maps link first"); return; }
+  var m = raw.match(/@(-?\d{1,2}\.\d+),(-?\d{1,3}\.\d+)/) ||
+          raw.match(/[?&](?:q|query|destination|ll)=(-?\d{1,2}\.\d+)(?:,|%2C)(-?\d{1,3}\.\d+)/) ||
+          raw.match(/(-?\d{1,2}\.\d{3,})[,\s]+(-?\d{1,3}\.\d{3,})/);
+  if (!m) {
+    toast("Couldn't read that — in Google Maps, press & hold your home, then copy the coordinates shown");
+    return;
+  }
+  var lat = parseFloat(m[1]), lng = parseFloat(m[2]);
+  if (!(lat > 22 && lat < 27 && lng > 51 && lng < 57)) {
+    toast("Those coordinates don't look like Abu Dhabi — double-check and try again");
+    return;
+  }
+  initPickMap();
+  setPick(L.latLng(lat, lng), 18);
+  document.getElementById("coordPaste").value = "";
+  toast("Pin set from coordinates ✓");
 });
 document.getElementById("geoBtn").addEventListener("click", function(){
   if (!navigator.geolocation) { toast("Location not available — tap the map instead"); return; }

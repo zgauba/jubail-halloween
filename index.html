@@ -208,6 +208,12 @@ footer{padding:10px 16px calc(12px + env(safe-area-inset-bottom,0px)); color:#6f
     <p class="hint" style="margin:-6px 0 14px">Everything about your own sign-up lives here: your candy status, your pin, and your private control link.</p>
     <div id="minewrap"></div>
     <div class="card" style="margin-top:12px">
+      <div class="t">🔗 Have a control link?</div>
+      <div class="s">If you signed up on another phone or in Safari before installing the app, paste your control link here to bring your home's buttons to this screen.</div>
+      <input type="text" id="linkPaste" placeholder="Paste your control link" autocomplete="off">
+      <button class="btn btn-ghost" id="linkAdd" style="width:100%; margin-top:8px">Add my home here</button>
+    </div>
+    <div class="card" style="margin-top:12px">
       <div class="t">📲 Keep it handy on the night</div>
       <div class="s">Save this page as an app on your home screen — one tap to the map or your candy toggle.</div>
       <button class="btn btn-ghost" id="installBtn" style="width:100%">Add to home screen</button>
@@ -703,6 +709,16 @@ document.getElementById("adminPanel").addEventListener("click", function(ev){
       .then(function(){ toast("Entry restored ✓"); adminLoad(); loadHomes(); })
       .catch(function(){ toast("Couldn't restore"); });
   }
+});
+
+/* ---------- add home from a pasted control link ---------- */
+document.getElementById("linkAdd").addEventListener("click", function(){
+  var raw = document.getElementById("linkPaste").value.trim();
+  var mm = raw.match(/m=([0-9a-fA-F-]{36})~([0-9a-fA-F-]{36})/) || raw.match(/^([0-9a-fA-F-]{36})~([0-9a-fA-F-]{36})$/);
+  if (!mm) { toast("That doesn't look like a control link — copy the whole link"); return; }
+  pendingManage = { id: mm[1], token: mm[2] };
+  document.getElementById("linkPaste").value = "";
+  loadHomes();
 });
 
 /* ---------- add to home screen ---------- */

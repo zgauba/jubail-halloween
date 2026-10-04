@@ -9,7 +9,7 @@
 <meta name="theme-color" content="#15101c">
 <link rel="apple-touch-icon" href="icon-180.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Jubail Trick Or Treat">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎃</text></svg>">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
@@ -214,8 +214,8 @@ footer{padding:10px 16px calc(12px + env(safe-area-inset-bottom,0px)); color:#6f
       <button class="btn btn-ghost" id="linkAdd" style="width:100%; margin-top:8px">Add my home here</button>
     </div>
     <div class="card" style="margin-top:12px">
-      <div class="t">📲 Keep it handy on the night</div>
-      <div class="s">Save this page as an app on your home screen — one tap to the map or your candy toggle.</div>
+      <div class="t">📲 Save this as an app</div>
+      <div class="s" id="installSteps"></div>
       <button class="btn btn-ghost" id="installBtn" style="width:100%">Add to home screen</button>
       <p class="hint" id="installHint" style="display:none; margin:8px 0 0"></p>
     </div>
@@ -724,6 +724,23 @@ document.getElementById("linkAdd").addEventListener("click", function(){
 /* ---------- add to home screen ---------- */
 var deferredInstall = null;
 window.addEventListener("beforeinstallprompt", function(e){ e.preventDefault(); deferredInstall = e; });
+(function(){
+  var steps = document.getElementById("installSteps");
+  var btn = document.getElementById("installBtn");
+  var standalone = (window.matchMedia && matchMedia("(display-mode: standalone)").matches) || window.navigator.standalone === true;
+  if (standalone) {
+    steps.textContent = "You're already using the app version 🎃";
+    btn.style.display = "none";
+    return;
+  }
+  var isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent || "");
+  if (isIOS) {
+    steps.innerHTML = "On iPhone (in Safari): <b>1.</b> Sign up first, so the app remembers your home. <b>2.</b> Tap the <b>Share</b> button (the square with an arrow at the bottom). <b>3.</b> Scroll down and tap <b>Add to Home Screen</b>, then <b>Add</b>.<br><br>If the app's Mine tab comes up empty afterwards, paste your control link in the box above.";
+    btn.style.display = "none";
+  } else {
+    steps.innerHTML = "On Android: tap the button below, or open your browser's menu (⋮) and choose <b>Install app</b> or <b>Add to Home screen</b>. Your sign-up carries over automatically.";
+  }
+})();
 document.getElementById("installBtn").addEventListener("click", function(){
   var hint = document.getElementById("installHint");
   if (deferredInstall) {
@@ -731,12 +748,7 @@ document.getElementById("installBtn").addEventListener("click", function(){
     deferredInstall = null;
     return;
   }
-  var ua = navigator.userAgent || "";
-  if (/iPhone|iPad|iPod/.test(ua)) {
-    hint.textContent = "In Safari: tap the Share button (square with arrow), scroll down, then tap “Add to Home Screen”.";
-  } else {
-    hint.textContent = "In your browser menu (⋮), choose “Add to Home screen” or “Install app”.";
-  }
+  hint.textContent = "In your browser menu (⋮), choose “Install app” or “Add to Home screen”.";
   hint.style.display = "block";
 });
 if ("serviceWorker" in navigator) { try { navigator.serviceWorker.register("sw.js"); } catch(e){} }

@@ -80,8 +80,10 @@ h2{font-family:Fraunces,Georgia,serif; font-size:18px; margin:2px 0 12px}
 .st-off{background:rgba(141,135,152,.2); color:#c9c4d4}
 form .field,.field{margin-bottom:14px}
 label{display:block; font-size:12.5px; font-weight:600; color:var(--muted); margin-bottom:6px; letter-spacing:.02em}
-input[type=text],textarea{width:100%; background:var(--panel); border:1px solid var(--line); border-radius:11px; color:var(--fg); padding:11px 12px; font-size:15px}
-input:focus,textarea:focus{outline:2px solid var(--accent); outline-offset:0; border-color:var(--accent)}
+input[type=text],textarea,select{width:100%; background:var(--panel); border:1px solid var(--line); border-radius:11px; color:var(--fg); padding:11px 12px; font-size:15px; color-scheme:dark}
+input:focus,textarea:focus,select:focus{outline:2px solid var(--accent); outline-offset:0; border-color:var(--accent)}
+select{appearance:none; -webkit-appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23a79fbb' stroke-width='2' fill='none'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 14px center}
+select:invalid{color:var(--muted)}
 textarea{min-height:64px; resize:vertical; font-family:inherit}
 .seg{display:flex; gap:7px; flex-wrap:wrap}
 .seg input{position:absolute; opacity:0; pointer-events:none}
@@ -156,14 +158,17 @@ footer{padding:10px 16px calc(12px + env(safe-area-inset-bottom,0px)); color:#6f
       </div>
       <div class="field">
         <label for="village">Village / area</label>
-        <input type="text" id="village" list="villages" placeholder="e.g. Ain Al Maha" autocomplete="off">
-        <datalist id="villages">
-          <option value="Ain Al Maha"></option>
-          <option value="Seef Al Jubail"></option>
-          <option value="Souk Al Jubail"></option>
-          <option value="Marfaa Al Jubail"></option>
-          <option value="Bada Al Jissi"></option>
-        </datalist>
+        <select id="village">
+          <option value="" disabled selected>Select your village…</option>
+          <option value="Ain Al Maha">Ain Al Maha</option>
+          <option value="Bada Al Jubail">Bada Al Jubail</option>
+          <option value="Marfaa Al Jubail">Marfaa Al Jubail</option>
+          <option value="Nad Al Dhabi">Nad Al Dhabi</option>
+          <option value="Seef Al Jubail">Seef Al Jubail</option>
+          <option value="Souk Al Jubail">Souk Al Jubail</option>
+          <option value="__other">Other…</option>
+        </select>
+        <input type="text" id="villageOther" placeholder="Type your village / area" autocomplete="off" style="display:none; margin-top:8px">
       </div>
       <div class="field">
         <label for="unit">Villa / unit number</label>
@@ -462,6 +467,9 @@ function initPickMap(){
   applyBase();
   pickMap.on("click", function(ev){ setPick(ev.latlng); });
 }
+document.getElementById("village").addEventListener("change", function(){
+  document.getElementById("villageOther").style.display = this.value === "__other" ? "" : "none";
+});
 document.getElementById("geoBtn").addEventListener("click", function(){
   if (!navigator.geolocation) { toast("Location not available — tap the map instead"); return; }
   var btn = this; btn.disabled = true; btn.textContent = "Locating…";
@@ -478,12 +486,13 @@ document.getElementById("geoBtn").addEventListener("click", function(){
 document.getElementById("signupForm").addEventListener("submit", function(ev){
   ev.preventDefault();
   var unit = document.getElementById("unit").value.trim();
-  var village = document.getElementById("village").value.trim();
+  var village = document.getElementById("village").value;
+  if (village === "__other") village = document.getElementById("villageOther").value.trim();
   var pass = document.getElementById("passcode").value.trim();
   var htype = document.querySelector('input[name=htype]:checked').value;
   var handout = document.querySelector('input[name=handout]:checked').value;
   var details = document.getElementById("details").value.trim();
-  if (!village) { toast("Please enter your village"); return; }
+  if (!village) { toast("Please select your village"); return; }
   if (!unit) { toast("Please enter your villa / unit number"); return; }
   if (!pickMarker) { toast("Please set your pin on the map"); return; }
   if (!pass) { toast("Please enter the group passcode"); return; }
@@ -495,6 +504,7 @@ document.getElementById("signupForm").addEventListener("submit", function(ev){
       myHomes.push({ id: res.id, token: res.edit_token, unit: unit, village: village });
       saveMine();
       document.getElementById("signupForm").reset();
+      document.getElementById("villageOther").style.display = "none";
       if (pickMarker) { pickMap.removeLayer(pickMarker); pickMarker = null; updateCoordStatus(); }
       toast("You're on the map! Your control link is under 🏠 Mine");
       loadHomes().then(function(){ show("mine"); });

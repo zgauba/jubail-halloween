@@ -52,8 +52,8 @@ section.active{display:block}
 #refreshBtn{position:absolute; top:10px; right:10px; z-index:900; width:40px; height:40px; border-radius:50%; border:1px solid var(--line); background:rgba(26,20,36,.92); color:var(--fg); font-size:18px; cursor:pointer}
 #moveBanner{position:absolute; top:10px; left:10px; right:58px; z-index:900; background:var(--accent); color:#2b1405; border-radius:var(--radius); padding:10px 12px; font-size:13.5px; font-weight:600; display:none}
 #moveBanner button{float:right; border:0; background:#2b1405; color:#ffd9b8; border-radius:8px; padding:3px 10px; font-size:12px; cursor:pointer}
-/* Dark-mode filter over the light OSM tiles so the night theme holds */
-.leaflet-tile-pane{filter:invert(1) hue-rotate(200deg) brightness(.85) contrast(.9) saturate(.6)}
+/* Dark-mode filter over the light OSM tiles (street mode only; satellite stays natural) */
+.streetmode .leaflet-tile-pane{filter:invert(1) hue-rotate(200deg) brightness(.85) contrast(.9) saturate(.6)}
 .pin{width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:16px; background:var(--accent); border:2.5px solid #fff; box-shadow:0 2px 8px rgba(0,0,0,.5)}
 .pin.out{background:var(--out); opacity:.8}
 .leaflet-popup-content-wrapper{background:var(--panel2); color:var(--fg); border-radius:12px}
@@ -132,6 +132,7 @@ footer{padding:10px 16px calc(12px + env(safe-area-inset-bottom,0px)); color:#6f
     <button id="refreshBtn" title="Refresh">⟳</button>
     <div id="moveBanner">Tap the map to set the new pin location <button id="moveCancel">Cancel</button></div>
     <div class="map-overlay">
+      <button class="chip" id="baseToggle" style="font-weight:700">🗺️ Streets</button>
       <span class="chip"><span class="dot dot-on"></span>Treats available</span>
       <span class="chip"><span class="dot dot-off"></span>Out of candy</span>
     </div>
@@ -284,12 +285,32 @@ function copyText(t){
   } else fb();
 }
 
-var TILES = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
-var ATTR = "&copy; OpenStreetMap contributors";
+var OSM_URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
+var OSM_ATTR = "&copy; OpenStreetMap contributors";
+var SAT_URL = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
+var SAT_ATTR = "Imagery &copy; Esri, Maxar, Earthstar Geographics";
+var baseMode = "sat";
+try { baseMode = localStorage.getItem("jh_basemap") || "sat"; } catch(e){}
+var baseMain = null, basePick = null;
+
+function baseLayer(){
+  return baseMode === "sat"
+    ? L.tileLayer(SAT_URL, { maxNativeZoom: 19, maxZoom: 20, attribution: SAT_ATTR })
+    : L.tileLayer(OSM_URL, { maxZoom: 19, attribution: OSM_ATTR });
+}
+function applyBase(){
+  if (map) { if (baseMain) { map.removeLayer(baseMain); } baseMain = baseLayer().addTo(map); }
+  if (pickMap) { if (basePick) { pickMap.removeLayer(basePick); } basePick = baseLayer().addTo(pickMap); }
+  document.getElementById("map").classList.toggle("streetmode", baseMode !== "sat");
+  document.getElementById("pickmap").classList.toggle("streetmode", baseMode !== "sat");
+  var bt = document.getElementById("baseToggle");
+  if (bt) bt.textContent = baseMode === "sat" ? "🗺️ Streets" : "🛰️ Satellite";
+  try { localStorage.setItem("jh_basemap", baseMode); } catch(e){}
+}
 
 function initMap(){
   map = L.map("map", { zoomControl: true }).setView(CENTER, 13);
-  L.tileLayer(TILES, { maxZoom: 19, attribution: ATTR }).addTo(map);
+  applyBase();
   markerLayer = L.layerGroup().addTo(map);
   map.on("click", function(ev){
     if (!moveMode) return;
@@ -438,7 +459,7 @@ function updateCoordStatus(){
 function initPickMap(){
   if (pickMap) { setTimeout(function(){ pickMap.invalidateSize(); }, 60); return; }
   pickMap = L.map("pickmap").setView(CENTER, 13);
-  L.tileLayer(TILES, { maxZoom: 19, attribution: ATTR }).addTo(pickMap);
+  applyBase();
   pickMap.on("click", function(ev){ setPick(ev.latlng); });
 }
 document.getElementById("geoBtn").addEventListener("click", function(){
@@ -521,6 +542,10 @@ document.getElementById("minewrap").addEventListener("click", function(ev){
   if (ev.target.id === "addAnother") show("signup");
 });
 document.getElementById("moveCancel").addEventListener("click", endMove);
+document.getElementById("baseToggle").addEventListener("click", function(){
+  baseMode = baseMode === "sat" ? "osm" : "sat";
+  applyBase();
+});
 document.getElementById("refreshBtn").addEventListener("click", function(){ loadHomes().then(function(){ toast("Updated ✓"); }); });
 
 /* ---------- organizer panel ---------- */

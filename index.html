@@ -398,10 +398,12 @@ function renderMine(){
         '<button class="bigtoggle ' + (out ? "tg-off" : "tg-on") + '" data-i="' + i + '" data-act="toggle">' +
           (out ? "🚫 Out of candy — tap when restocked" : "🍬 Candy available — tap when you run out") + '</button>' +
         '<div class="cardbtns">' +
+          '<button class="btn btn-ghost" data-i="' + i + '" data-act="handout">' + (live.handout === "door" ? "🧺 Switch to help-yourself" : "🔔 Switch to at-the-door") + '</button>' +
           '<button class="btn btn-ghost" data-i="' + i + '" data-act="link">🔗 Copy control link</button>' +
           '<button class="btn btn-ghost" data-i="' + i + '" data-act="move">📍 Fix pin</button>' +
           '<button class="btn btn-ghost" data-i="' + i + '" data-act="remove">Remove</button>' +
         '</div>' +
+        '<p class="hint" style="margin:8px 0 0">' + (live.handout === "door" ? "Currently: 🔔 treats handed out at your door" : "Currently: 🧺 treats left outside — help yourself") + '</p>' +
         '<p class="hint" style="margin:8px 0 0">The control link works on any phone — share it with whoever is home on the night.</p>'
       : '<div class="cardbtns"><button class="btn btn-ghost" data-i="' + i + '" data-act="forget">Clear from this phone</button></div>') +
       '</div>';
@@ -532,6 +534,13 @@ document.getElementById("minewrap").addEventListener("click", function(ev){
       el.disabled = true;
       rpc("jh_set_candy", { p_id: m.id, p_token: m.token, p_out: newVal })
         .then(function(ok){ if (!ok) toast("Couldn't update — entry not found"); return loadHomes(); })
+        .catch(function(){ toast("Couldn't update — try again"); });
+    } else if (act === "handout") {
+      var lv = null; homes.forEach(function(h){ if (h.id === m.id) lv = h; });
+      var newMode = (lv && lv.handout === "door") ? "self_serve" : "door";
+      el.disabled = true;
+      rpc("jh_set_handout", { p_id: m.id, p_token: m.token, p_handout: newMode })
+        .then(function(ok){ if (!ok) toast("Couldn't update — entry not found"); else toast("Updated ✓"); return loadHomes(); })
         .catch(function(){ toast("Couldn't update — try again"); });
     } else if (act === "link") {
       copyText(manageLink(m));

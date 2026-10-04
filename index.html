@@ -258,6 +258,7 @@ var CENTER = [24.552, 54.49];
 var adminCode = null;
 var adminData = null;
 var pendingManage = null;
+var editNotesId = null;
 
 try { myHomes = JSON.parse(localStorage.getItem("jh_homes_v1") || "[]"); } catch(e){ myHomes = []; }
 try { adminCode = localStorage.getItem("jh_admin_code"); } catch(e){}
@@ -418,10 +419,19 @@ function renderMine(){
           (out ? "🚫 Out of candy — tap when restocked" : "🍬 Candy available — tap when you run out") + '</button>' +
         '<div class="cardbtns">' +
           '<button class="btn btn-ghost" data-i="' + i + '" data-act="handout">' + (live.handout === "door" ? "🧺 Switch to help-yourself" : "🔔 Switch to at-the-door") + '</button>' +
+          '<button class="btn btn-ghost" data-i="' + i + '" data-act="notes">📝 Edit notes</button>' +
           '<button class="btn btn-ghost" data-i="' + i + '" data-act="link">🔗 Copy control link</button>' +
           '<button class="btn btn-ghost" data-i="' + i + '" data-act="move">📍 Fix pin</button>' +
           '<button class="btn btn-ghost" data-i="' + i + '" data-act="remove">Remove</button>' +
         '</div>' +
+        (editNotesId === m.id ?
+          '<div style="margin-top:10px">' +
+          '<textarea id="notesEdit-' + i + '" placeholder="Notes for visitors — entrance info, garden gate side, etc.">' + esc(live.details || "") + '</textarea>' +
+          '<div class="cardbtns" style="margin-top:8px">' +
+            '<button class="btn btn-ghost" data-i="' + i + '" data-act="notessave">💾 Save notes</button>' +
+            '<button class="btn btn-ghost" data-i="' + i + '" data-act="notescancel">Cancel</button>' +
+          '</div></div>'
+        : (live.details ? '<p class="hint" style="margin:8px 0 0">💬 ' + esc(live.details) + '</p>' : "")) +
         '<p class="hint" style="margin:8px 0 0">' + (live.handout === "door" ? "Currently: 🔔 treats handed out at your door" : "Currently: 🧺 treats left outside — help yourself") + '</p>' +
         ''
       : '<div class="cardbtns"><button class="btn btn-ghost" data-i="' + i + '" data-act="forget">Clear from this phone</button></div>') +
@@ -432,6 +442,7 @@ function renderMine(){
     "<p class=\"hint\" style=\"margin:0 0 7px\">🍬 / 🚫 <b>Big button</b> — tap when you run out of candy; your house instantly greys out on everyone's map so families skip it. Tap again when restocked.</p>" +
     "<p class=\"hint\" style=\"margin:0 0 7px\">🔗 <b>Copy control link</b> — your private remote control. Open the link on any phone (send it to whoever is home) to get these same buttons there. Don't post it in the group.</p>" +
     "<p class=\"hint\" style=\"margin:0 0 7px\">🔔 / 🧺 <b>Switch</b> — change between handing out treats at your door and leaving them outside for kids to take.</p>" +
+    "<p class=\"hint\" style=\"margin:0 0 7px\">📝 <b>Edit notes</b> — update your visitor notes anytime (entrance info, garden gate side, etc.).</p>" +
     "<p class=\"hint\" style=\"margin:0 0 7px\">📍 <b>Fix pin</b> — move your home's location if the pin landed in the wrong spot.</p>" +
     "<p class=\"hint\" style=\"margin:0\"><b>Remove</b> — take your home off the map entirely (asks you to tap twice).</p>" +
     '</div>';
@@ -589,6 +600,23 @@ document.getElementById("minewrap").addEventListener("click", function(ev){
       rpc("jh_set_handout", { p_id: m.id, p_token: m.token, p_handout: newMode })
         .then(function(ok){ if (!ok) toast("Couldn't update — entry not found"); else toast("Updated ✓"); return loadHomes(); })
         .catch(function(){ toast("Couldn't update — try again"); });
+    } else if (act === "notes") {
+      editNotesId = (editNotesId === m.id) ? null : m.id;
+      renderMine();
+    } else if (act === "notescancel") {
+      editNotesId = null;
+      renderMine();
+    } else if (act === "notessave") {
+      var ta = document.getElementById("notesEdit-" + el.getAttribute("data-i"));
+      var txt = ta ? ta.value.trim() : "";
+      el.disabled = true;
+      rpc("jh_set_details", { p_id: m.id, p_token: m.token, p_details: txt })
+        .then(function(ok){
+          if (!ok) toast("Couldn't update — entry not found"); else toast("Notes updated ✓");
+          editNotesId = null;
+          return loadHomes();
+        })
+        .catch(function(){ el.disabled = false; toast("Couldn't save — try again"); });
     } else if (act === "link") {
       copyText(manageLink(m));
     } else if (act === "move") {

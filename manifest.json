@@ -1,6 +1,6 @@
 {
-  "name": "Jubail Trick-or-Treat",
-  "short_name": "TrickOrTreat",
+  "name": "Jubail Trick Or Treat",
+  "short_name": "Jubail Trick Or Treat",
   "start_url": ".",
   "scope": ".",
   "display": "standalone",

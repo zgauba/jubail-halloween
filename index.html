@@ -238,6 +238,15 @@ footer{padding:10px 16px calc(12px + env(safe-area-inset-bottom,0px)); color:#6f
   <section id="sec-mine">
     <h2>My home — your night-of controls</h2>
     <p class="hint" style="margin:-6px 0 14px">Everything about your own sign-up lives here: your candy status, your pin, and your private control link.</p>
+    <details class="notice">
+      <summary>📢 Community reminder — decorations allowed Oct 21 – Nov 10</summary>
+      <ul>
+        <li>Halloween decorations may go up from <b>21 October</b> and must come down by <b>10 November</b></li>
+        <li>Keep decorations within your own plot — not on public pathways, walkways, landscaping, roadsides or other shared spaces</li>
+        <li>Keep them family-friendly — Jubail is home to families and young children</li>
+      </ul>
+      <p class="hint" style="margin:8px 0 0">Summary of the Jubail Island community management announcement, per the Master Community Homeowner Guidelines.</p>
+    </details>
     <div id="minewrap"></div>
     <div class="card" style="margin-top:12px">
       <div class="t">🔗 Have a control link?</div>
@@ -281,6 +290,8 @@ var adminCode = null;
 var adminData = null;
 var pendingManage = null;
 var editNotesId = null;
+var orgNotes = {};
+var adminNoteId = null;
 
 try { myHomes = JSON.parse(localStorage.getItem("jh_homes_v1") || "[]"); } catch(e){ myHomes = []; }
 try { adminCode = localStorage.getItem("jh_admin_code"); } catch(e){}
@@ -436,6 +447,10 @@ function renderMine(){
     var out = live ? live.out_of_candy : false;
     html += '<div class="card">' +
       '<div class="t">' + esc(live ? live.unit : m.unit) + '</div><div class="s">' + esc(live ? live.village : m.village) + (live ? "" : " · (no longer on the map)") + '</div>' +
+      (live && orgNotes[m.id] ?
+        '<div class="notice" style="margin-bottom:10px">📣 <b>Message from the organizers:</b><br>' + esc(orgNotes[m.id]) +
+        '<div style="margin-top:8px"><button class="mini" data-i="' + i + '" data-act="acknote">Got it — dismiss</button></div></div>'
+      : "") +
       (live ?
         '<button class="bigtoggle ' + (out ? "tg-off" : "tg-on") + '" data-i="' + i + '" data-act="toggle">' +
           (out ? "🚫 Out of candy — tap when restocked" : "🍬 Candy available — tap when you run out") + '</button>' +
@@ -490,8 +505,16 @@ function applyPendingManage(){
   toast("Control link added on this phone 🎃");
 }
 
+function loadMyNotes(){
+  myHomes.forEach(function(m){
+    rpc("jh_get_note", { p_id: m.id, p_token: m.token }).then(function(n){
+      if ((orgNotes[m.id] || null) !== (n || null)) { orgNotes[m.id] = n; renderMine(); }
+    }).catch(function(){});
+  });
+}
+
 function loadHomes(){
-  return rpc("jh_list").then(function(data){ homes = data || []; renderAll(); applyPendingManage(); })
+  return rpc("jh_list").then(function(data){ homes = data || []; renderAll(); applyPendingManage(); loadMyNotes(); })
     .catch(function(){ toast("Couldn't load homes — check your connection"); });
 }
 
@@ -622,6 +645,11 @@ document.getElementById("minewrap").addEventListener("click", function(ev){
       rpc("jh_set_handout", { p_id: m.id, p_token: m.token, p_handout: newMode })
         .then(function(ok){ if (!ok) toast("Couldn't update — entry not found"); else toast("Updated ✓"); return loadHomes(); })
         .catch(function(){ toast("Couldn't update — try again"); });
+    } else if (act === "acknote") {
+      el.disabled = true;
+      rpc("jh_ack_note", { p_id: m.id, p_token: m.token })
+        .then(function(){ orgNotes[m.id] = null; renderMine(); })
+        .catch(function(){ toast("Couldn't dismiss — try again"); });
     } else if (act === "notes") {
       editNotesId = (editNotesId === m.id) ? null : m.id;
       renderMine();
@@ -718,14 +746,25 @@ function renderAdmin(){
   hs.forEach(function(h){
     html += '<div class="row' + (h.removed ? " rmrow outrow" : (h.out_of_candy ? " outrow" : "")) + '">' +
       '<span class="ic">' + typeIcon(h.home_type) + '</span>' +
-      '<div class="meta"><div class="u">' + esc(h.unit) + '</div>' +
+      '<div class="meta"><div class="u">' + esc(h.unit) + (h.org_note ? " 📣" : "") + '</div>' +
       '<div class="d">' + esc(h.village) + (h.details ? " · " + esc(h.details) : "") + '</div></div>' +
       (h.removed ? '<span class="status st-off">REMOVED</span>' :
         '<span class="status ' + (h.out_of_candy ? "st-off" : "st-on") + '">' + (h.out_of_candy ? "OUT" : "🍬") + '</span>') +
       (h.removed ?
         '<button class="mini" data-aact="arestore" data-id="' + h.id + '">Restore</button>' :
         '<button class="mini" data-aact="acandy" data-id="' + h.id + '" data-out="' + (h.out_of_candy ? "0" : "1") + '">' + (h.out_of_candy ? "🍬 Restock" : "🚫 Mark out") + '</button>' +
+        '<button class="mini" data-aact="anoteform" data-id="' + h.id + '">✉️ Note</button>' +
         '<button class="mini" data-aact="aremove" data-id="' + h.id + '">Remove</button>') +
+      (adminNoteId === h.id ?
+        '<div style="width:100%; margin-top:8px">' +
+        '<input type="text" id="orgNoteInput" placeholder="e.g. Your pin looks misplaced — tap Fix pin under Mine" value="' + esc(h.org_note || "") + '">' +
+        '<div class="cardbtns" style="margin-top:8px">' +
+          '<button class="btn btn-ghost" data-aact="anotesave" data-id="' + h.id + '">💾 Save note</button>' +
+          '<button class="btn btn-ghost" data-aact="anoteform" data-id="' + h.id + '">Cancel</button>' +
+        '</div>' +
+        '<p class="hint" style="margin:6px 0 0">Shows as a banner on this home\'s Mine page until they dismiss it. Save empty to clear.</p>' +
+        '</div>'
+      : "") +
       '</div>';
   });
   panel.innerHTML = html;
@@ -775,6 +814,14 @@ document.getElementById("adminPanel").addEventListener("click", function(ev){
     a.href = URL.createObjectURL(blob);
     a.download = "jubail-halloween-" + (adminData ? adminData.season : "export") + ".csv";
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  } else if (act === "anoteform") {
+    adminNoteId = (adminNoteId === id) ? null : id;
+    renderAdmin();
+  } else if (act === "anotesave") {
+    var ni = document.getElementById("orgNoteInput");
+    rpc("jh_admin_set_note", { p_code: adminCode, p_id: id, p_note: ni ? ni.value : "" })
+      .then(function(){ toast("Note saved ✓"); adminNoteId = null; adminLoad(); })
+      .catch(function(){ toast("Couldn't save note"); });
   } else if (act === "acandy") {
     rpc("jh_admin_set_candy", { p_code: adminCode, p_id: id, p_out: el.getAttribute("data-out") === "1" })
       .then(function(){ adminLoad(); loadHomes(); })

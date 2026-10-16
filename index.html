@@ -743,7 +743,11 @@ function renderAdmin(){
   '</div>';
   html += '<h2 style="margin-top:16px">All entries</h2>';
   if (hs.length === 0) html += '<div class="empty">No entries this season yet.</div>';
-  hs.forEach(function(h){
+  var byV = {};
+  hs.forEach(function(h){ (byV[h.village] = byV[h.village] || []).push(h); });
+  Object.keys(byV).sort().forEach(function(v){
+    html += '<div class="village"><h3>' + esc(v) + " · " + byV[v].length + '</h3>';
+    byV[v].forEach(function(h){
     html += '<div class="row' + (h.removed ? " rmrow outrow" : (h.out_of_candy ? " outrow" : "")) + '">' +
       '<span class="ic">' + typeIcon(h.home_type) + '</span>' +
       '<div class="meta"><div class="u">' + esc(h.unit) + (h.org_note ? " 📣" : "") + '</div>' +
@@ -766,6 +770,8 @@ function renderAdmin(){
         '</div>'
       : "") +
       '</div>';
+    });
+    html += "</div>";
   });
   panel.innerHTML = html;
 }

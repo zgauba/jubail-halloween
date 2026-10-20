@@ -69,9 +69,13 @@ section.active{display:block}
 .pin.out{background:var(--out); opacity:.8}
 .pin.e-garden{border-color:#7ddf8a}
 .pin.e-both{border-color:#fff #7ddf8a #7ddf8a #fff}
-.ent-pill{font-size:10.5px; font-weight:800; border-radius:999px; padding:3px 7px; white-space:nowrap}
-.ent-garden{background:rgba(125,223,138,.15); color:var(--good)}
-.ent-both{background:rgba(125,223,138,.15); color:var(--good); border:1px dashed rgba(125,223,138,.5)}
+.ent-pill{font-size:10.5px; font-weight:800; border-radius:999px; padding:3px 8px; white-space:nowrap}
+.ent-front{background:var(--panel2); color:#c9c4d4; border:1px solid var(--line)}
+.ent-garden{background:rgba(125,223,138,.15); color:var(--good); border:1px solid rgba(125,223,138,.35)}
+.ent-both{background:linear-gradient(100deg, rgba(255,255,255,.12) 50%, rgba(125,223,138,.2) 50%); color:var(--good); border:1px solid rgba(125,223,138,.5)}
+.ring{display:inline-block; width:13px; height:13px; border-radius:50%; background:var(--accent); border:2.5px solid #fff; margin-right:5px; vertical-align:-2px}
+.ring.g{border-color:#7ddf8a}
+.ring.b{border-color:#fff #7ddf8a #7ddf8a #fff}
 .leaflet-popup-content-wrapper{background:var(--panel2); color:var(--fg); border-radius:12px}
 .leaflet-popup-tip{background:var(--panel2)}
 .leaflet-popup-content{margin:12px 14px; font:13.5px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
@@ -158,7 +162,9 @@ footer{padding:10px 16px calc(12px + env(safe-area-inset-bottom,0px)); color:#6f
       <button class="chip" id="baseToggle" style="font-weight:700">🗺️ Streets</button>
       <span class="chip"><span class="dot dot-on"></span>Treats available</span>
       <span class="chip"><span class="dot dot-off"></span>Out of candy</span>
-      <span class="chip">Ring: ⚪ front · 🟢 garden · ◐ both</span>
+      <span class="chip"><span class="ring"></span>Front Gate</span>
+      <span class="chip"><span class="ring g"></span>Garden Gate</span>
+      <span class="chip"><span class="ring b"></span>Both Gates</span>
     </div>
   </section>
 
@@ -224,9 +230,9 @@ footer{padding:10px 16px calc(12px + env(safe-area-inset-bottom,0px)); color:#6f
       <div class="field">
         <label>Kids should come to…</label>
         <div class="seg">
-          <label><input type="radio" name="entrance" value="front" checked><span>🚪 Front gate</span></label>
-          <label><input type="radio" name="entrance" value="garden"><span>🌳 Garden gate (park side)</span></label>
-          <label><input type="radio" name="entrance" value="both"><span>🚪🌳 Both</span></label>
+          <label><input type="radio" name="entrance" value="front" checked><span>🚪 Front Gate</span></label>
+          <label><input type="radio" name="entrance" value="garden"><span>🌳 Garden Gate (park side)</span></label>
+          <label><input type="radio" name="entrance" value="both"><span>🚪🌳 Both Gates</span></label>
         </div>
       </div>
       <div class="field">
@@ -351,11 +357,11 @@ function typeLabel(t){ return t.charAt(0).toUpperCase() + t.slice(1); }
 function gmaps(h){ return "https://www.google.com/maps/dir/?api=1&destination=" + encodeURIComponent(h.lat + "," + h.lng) + "&dir_action=navigate&travelmode=walking"; }
 function distTo(h){ return userPos ? userPos.distanceTo(L.latLng(h.lat, h.lng)) : null; }
 function entClass(h){ return h.entrance === "garden" ? " e-garden" : h.entrance === "both" ? " e-both" : ""; }
-function entLabel(h){ return h.entrance === "garden" ? "🌳 Garden gate — park side" : h.entrance === "both" ? "🚪🌳 Both front & garden gates" : "🚪 Front gate"; }
+function entLabel(h){ return h.entrance === "garden" ? "🌳 Garden Gate (park side)" : h.entrance === "both" ? "🚪🌳 Both Gates (front & garden)" : "🚪 Front Gate"; }
 function entPill(h){
-  if (h.entrance === "garden") return '<span class="ent-pill ent-garden">🌳 GARDEN</span>';
-  if (h.entrance === "both") return '<span class="ent-pill ent-both">🚪🌳 BOTH</span>';
-  return "";
+  if (h.entrance === "garden") return '<span class="ent-pill ent-garden">🌳 Garden Gate</span>';
+  if (h.entrance === "both") return '<span class="ent-pill ent-both">🚪🌳 Both Gates</span>';
+  return '<span class="ent-pill ent-front">🚪 Front Gate</span>';
 }
 function fmtDist(m){ return m < 950 ? (Math.max(10, Math.round(m / 10) * 10) + " m") : ((m / 1000).toFixed(1) + " km"); }
 function gpin(h){ return "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(h.lat + "," + h.lng); }
@@ -501,7 +507,7 @@ function renderMine(){
           (out ? "🚫 Out of candy — tap when restocked" : "🍬 Candy available — tap when you run out") + '</button>' +
         '<div class="cardbtns">' +
           '<button class="btn btn-ghost" data-i="' + i + '" data-act="handout">' + (live.handout === "door" ? "🧺 Switch to help-yourself" : "🔔 Switch to at-the-door") + '</button>' +
-          '<button class="btn btn-ghost" data-i="' + i + '" data-act="entrance">' + (live.entrance === "garden" ? "🌳 Entrance: Garden" : live.entrance === "both" ? "🚪🌳 Entrance: Both" : "🚪 Entrance: Front") + ' — change</button>' +
+          '<button class="btn btn-ghost" data-i="' + i + '" data-act="entrance">' + (live.entrance === "garden" ? "🌳 Garden Gate" : live.entrance === "both" ? "🚪🌳 Both Gates" : "🚪 Front Gate") + ' — tap to change</button>' +
           '<button class="btn btn-ghost" data-i="' + i + '" data-act="notes">📝 Edit notes</button>' +
           '<button class="btn btn-ghost" data-i="' + i + '" data-act="link">🔗 Copy control link</button>' +
           '<button class="btn btn-ghost" data-i="' + i + '" data-act="walink">📲 WhatsApp me my link</button>' +

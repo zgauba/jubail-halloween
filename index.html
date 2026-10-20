@@ -67,6 +67,11 @@ section.active{display:block}
 .streetmode .leaflet-tile-pane{filter:invert(1) hue-rotate(200deg) brightness(.85) contrast(.9) saturate(.6)}
 .pin{width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:16px; background:var(--accent); border:2.5px solid #fff; box-shadow:0 2px 8px rgba(0,0,0,.5)}
 .pin.out{background:var(--out); opacity:.8}
+.pin.e-garden{border-color:#7ddf8a}
+.pin.e-both{border-color:#fff #7ddf8a #7ddf8a #fff}
+.ent-pill{font-size:10.5px; font-weight:800; border-radius:999px; padding:3px 7px; white-space:nowrap}
+.ent-garden{background:rgba(125,223,138,.15); color:var(--good)}
+.ent-both{background:rgba(125,223,138,.15); color:var(--good); border:1px dashed rgba(125,223,138,.5)}
 .leaflet-popup-content-wrapper{background:var(--panel2); color:var(--fg); border-radius:12px}
 .leaflet-popup-tip{background:var(--panel2)}
 .leaflet-popup-content{margin:12px 14px; font:13.5px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
@@ -153,6 +158,7 @@ footer{padding:10px 16px calc(12px + env(safe-area-inset-bottom,0px)); color:#6f
       <button class="chip" id="baseToggle" style="font-weight:700">🗺️ Streets</button>
       <span class="chip"><span class="dot dot-on"></span>Treats available</span>
       <span class="chip"><span class="dot dot-off"></span>Out of candy</span>
+      <span class="chip">Ring: ⚪ front · 🟢 garden · ◐ both</span>
     </div>
   </section>
 
@@ -213,6 +219,14 @@ footer{padding:10px 16px calc(12px + env(safe-area-inset-bottom,0px)); color:#6f
         <div class="seg">
           <label><input type="radio" name="handout" value="door" checked><span>🔔 Handed out at our door</span></label>
           <label><input type="radio" name="handout" value="self_serve"><span>🧺 Left outside — help yourself</span></label>
+        </div>
+      </div>
+      <div class="field">
+        <label>Kids should come to…</label>
+        <div class="seg">
+          <label><input type="radio" name="entrance" value="front" checked><span>🚪 Front gate</span></label>
+          <label><input type="radio" name="entrance" value="garden"><span>🌳 Garden gate (park side)</span></label>
+          <label><input type="radio" name="entrance" value="both"><span>🚪🌳 Both</span></label>
         </div>
       </div>
       <div class="field">
@@ -336,6 +350,13 @@ function typeIcon(t){ return t === "villa" ? "🏠" : t === "townhouse" ? "🏘�
 function typeLabel(t){ return t.charAt(0).toUpperCase() + t.slice(1); }
 function gmaps(h){ return "https://www.google.com/maps/dir/?api=1&destination=" + encodeURIComponent(h.lat + "," + h.lng) + "&dir_action=navigate&travelmode=walking"; }
 function distTo(h){ return userPos ? userPos.distanceTo(L.latLng(h.lat, h.lng)) : null; }
+function entClass(h){ return h.entrance === "garden" ? " e-garden" : h.entrance === "both" ? " e-both" : ""; }
+function entLabel(h){ return h.entrance === "garden" ? "🌳 Garden gate — park side" : h.entrance === "both" ? "🚪🌳 Both front & garden gates" : "🚪 Front gate"; }
+function entPill(h){
+  if (h.entrance === "garden") return '<span class="ent-pill ent-garden">🌳 GARDEN</span>';
+  if (h.entrance === "both") return '<span class="ent-pill ent-both">🚪🌳 BOTH</span>';
+  return "";
+}
 function fmtDist(m){ return m < 950 ? (Math.max(10, Math.round(m / 10) * 10) + " m") : ((m / 1000).toFixed(1) + " km"); }
 function gpin(h){ return "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(h.lat + "," + h.lng); }
 function manageLink(m){ return BASE + "?m=" + m.id + "~" + m.token; }
@@ -397,13 +418,14 @@ function renderMap(){
   if (!map) return;
   markerLayer.clearLayers();
   homes.forEach(function(h){
-    var cls = h.out_of_candy ? "pin out" : "pin";
+    var cls = (h.out_of_candy ? "pin out" : "pin") + entClass(h);
     var em = h.out_of_candy ? "🚫" : "🍬";
     var icon = L.divIcon({ className: "", html: '<div class="' + cls + '">' + em + "</div>", iconSize: [34,34], iconAnchor: [17,17] });
     var pop = '<div class="pop-title">' + typeIcon(h.home_type) + " " + esc(h.unit) + '</div>' +
       '<div class="pop-sub">' + esc(h.village) + " · " + typeLabel(h.home_type) + '</div>' +
       (h.out_of_candy ? '<div class="pop-out">🚫 Out of candy</div>' :
         '<div>' + (h.handout === "door" ? "🔔 Ring — treats at the door" : "🧺 Help yourself outside") + '</div>') +
+      '<div class="pop-sub" style="margin-top:4px">' + entLabel(h) + '</div>' +
       (h.details ? '<div class="pop-note">💬 ' + esc(h.details) + '</div>' : "") +
       (distTo(h) !== null ? '<div class="pop-sub" style="margin-top:4px">📍 ≈ ' + fmtDist(distTo(h)) + ' from you</div>' : "") +
       '<a class="gobtn" target="_blank" rel="noopener" href="' + gmaps(h) + '">Directions ➜</a>' +
@@ -446,6 +468,7 @@ function renderList(){
         '<span class="ic">' + typeIcon(h.home_type) + '</span>' +
         '<div class="meta"><div class="u">' + esc(h.unit) + '</div>' +
         '<div class="d">' + (h.handout === "door" ? "Treats at the door" : "Self-serve outside") + (h.details ? " · " + esc(h.details) : "") + '</div></div>' +
+        entPill(h) +
         (d !== null ? '<span class="dist">' + fmtDist(d) + '</span>' : "") +
         '<span class="status ' + (h.out_of_candy ? "st-off" : "st-on") + '">' + (h.out_of_candy ? "OUT" : "🍬") + '</span>' +
         '<a target="_blank" rel="noopener" href="' + gmaps(h) + '">Go</a>' +
@@ -478,6 +501,7 @@ function renderMine(){
           (out ? "🚫 Out of candy — tap when restocked" : "🍬 Candy available — tap when you run out") + '</button>' +
         '<div class="cardbtns">' +
           '<button class="btn btn-ghost" data-i="' + i + '" data-act="handout">' + (live.handout === "door" ? "🧺 Switch to help-yourself" : "🔔 Switch to at-the-door") + '</button>' +
+          '<button class="btn btn-ghost" data-i="' + i + '" data-act="entrance">' + (live.entrance === "garden" ? "🌳 Entrance: Garden" : live.entrance === "both" ? "🚪🌳 Entrance: Both" : "🚪 Entrance: Front") + ' — change</button>' +
           '<button class="btn btn-ghost" data-i="' + i + '" data-act="notes">📝 Edit notes</button>' +
           '<button class="btn btn-ghost" data-i="' + i + '" data-act="link">🔗 Copy control link</button>' +
           '<button class="btn btn-ghost" data-i="' + i + '" data-act="move">📍 Fix pin</button>' +
@@ -491,7 +515,7 @@ function renderMine(){
             '<button class="btn btn-ghost" data-i="' + i + '" data-act="notescancel">Cancel</button>' +
           '</div></div>'
         : (live.details ? '<p class="hint" style="margin:8px 0 0">💬 ' + esc(live.details) + '</p>' : "")) +
-        '<p class="hint" style="margin:8px 0 0">' + (live.handout === "door" ? "Currently: 🔔 treats handed out at your door" : "Currently: 🧺 treats left outside — help yourself") + '</p>' +
+        '<p class="hint" style="margin:8px 0 0">' + (live.handout === "door" ? "Currently: 🔔 treats handed out at your door" : "Currently: 🧺 treats left outside — help yourself") + ' · ' + entLabel(live) + '</p>' +
         ''
       : '<div class="cardbtns"><button class="btn btn-ghost" data-i="' + i + '" data-act="forget">Clear from this phone</button></div>') +
       '</div>';
@@ -501,6 +525,7 @@ function renderMine(){
     "<p class=\"hint\" style=\"margin:0 0 7px\">🍬 / 🚫 <b>Big button</b> — tap when you run out of candy; your house instantly greys out on everyone's map so families skip it. Tap again when restocked.</p>" +
     "<p class=\"hint\" style=\"margin:0 0 7px\">🔗 <b>Copy control link</b> — your private remote control. Open the link on any phone (send it to whoever is home) to get these same buttons there. Don't post it in the group.</p>" +
     "<p class=\"hint\" style=\"margin:0 0 7px\">🔔 / 🧺 <b>Switch</b> — change between handing out treats at your door and leaving them outside for kids to take.</p>" +
+    "<p class=\"hint\" style=\"margin:0 0 7px\">🚪 / 🌳 <b>Entrance</b> — tap to cycle where kids should come: front gate → garden gate (park side) → both. Changes your pin's ring color on the map.</p>" +
     "<p class=\"hint\" style=\"margin:0 0 7px\">📝 <b>Edit notes</b> — update your visitor notes anytime (entrance info, garden gate side, etc.).</p>" +
     "<p class=\"hint\" style=\"margin:0 0 7px\">📍 <b>Fix pin</b> — move your home's location if the pin landed in the wrong spot.</p>" +
     "<p class=\"hint\" style=\"margin:0\"><b>Remove</b> — take your home off the map entirely (asks you to tap twice).</p>" +
@@ -618,6 +643,7 @@ document.getElementById("signupForm").addEventListener("submit", function(ev){
   var pass = document.getElementById("passcode").value.trim();
   var htype = document.querySelector('input[name=htype]:checked').value;
   var handout = document.querySelector('input[name=handout]:checked').value;
+  var entrance = document.querySelector('input[name=entrance]:checked').value;
   var details = document.getElementById("details").value.trim();
   if (!village) { toast("Please select your village"); return; }
   if (!unit) { toast("Please enter your villa / unit number"); return; }
@@ -630,6 +656,7 @@ document.getElementById("signupForm").addEventListener("submit", function(ev){
     .then(function(res){
       myHomes.push({ id: res.id, token: res.edit_token, unit: unit, village: village });
       saveMine();
+      if (entrance !== "front") { rpc("jh_set_entrance", { p_id: res.id, p_token: res.edit_token, p_entrance: entrance }).catch(function(){}); }
       document.getElementById("signupForm").reset();
       document.getElementById("villageOther").style.display = "none";
       if (pickMarker) { pickMap.removeLayer(pickMarker); pickMarker = null; updateCoordStatus(); }
@@ -659,6 +686,13 @@ document.getElementById("minewrap").addEventListener("click", function(ev){
       el.disabled = true;
       rpc("jh_set_candy", { p_id: m.id, p_token: m.token, p_out: newVal })
         .then(function(ok){ if (!ok) toast("Couldn't update — entry not found"); return loadHomes(); })
+        .catch(function(){ toast("Couldn't update — try again"); });
+    } else if (act === "entrance") {
+      var le = null; homes.forEach(function(h){ if (h.id === m.id) le = h; });
+      var next = (!le || le.entrance === "front") ? "garden" : (le.entrance === "garden" ? "both" : "front");
+      el.disabled = true;
+      rpc("jh_set_entrance", { p_id: m.id, p_token: m.token, p_entrance: next })
+        .then(function(ok){ if (!ok) toast("Couldn't update — entry not found"); else toast("Updated ✓"); return loadHomes(); })
         .catch(function(){ toast("Couldn't update — try again"); });
     } else if (act === "handout") {
       var lv = null; homes.forEach(function(h){ if (h.id === m.id) lv = h; });

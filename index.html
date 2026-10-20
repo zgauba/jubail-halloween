@@ -504,6 +504,7 @@ function renderMine(){
           '<button class="btn btn-ghost" data-i="' + i + '" data-act="entrance">' + (live.entrance === "garden" ? "🌳 Entrance: Garden" : live.entrance === "both" ? "🚪🌳 Entrance: Both" : "🚪 Entrance: Front") + ' — change</button>' +
           '<button class="btn btn-ghost" data-i="' + i + '" data-act="notes">📝 Edit notes</button>' +
           '<button class="btn btn-ghost" data-i="' + i + '" data-act="link">🔗 Copy control link</button>' +
+          '<button class="btn btn-ghost" data-i="' + i + '" data-act="walink">📲 WhatsApp me my link</button>' +
           '<button class="btn btn-ghost" data-i="' + i + '" data-act="move">📍 Fix pin</button>' +
           '<button class="btn btn-ghost" data-i="' + i + '" data-act="remove">Remove</button>' +
         '</div>' +
@@ -523,7 +524,8 @@ function renderMine(){
   html += '<div class="card" style="background:transparent">' +
     '<div class="s" style="margin:0 0 8px; font-weight:700; color:var(--accent-soft); text-transform:uppercase; letter-spacing:.06em; font-size:11.5px">What each button does</div>' +
     "<p class=\"hint\" style=\"margin:0 0 7px\">🍬 / 🚫 <b>Big button</b> — tap when you run out of candy; your house instantly greys out on everyone's map so families skip it. Tap again when restocked.</p>" +
-    "<p class=\"hint\" style=\"margin:0 0 7px\">🔗 <b>Copy control link</b> — your private remote control. Open the link on any phone (send it to whoever is home) to get these same buttons there. Don't post it in the group.</p>" +
+    "<p class=\"hint\" style=\"margin:0 0 7px\">🔗 <b>Copy control link</b> — your private remote control. Open the link on any phone to get these same buttons there. Don't post it in the group.</p>" +
+    "<p class=\"hint\" style=\"margin:0 0 7px\">📲 <b>WhatsApp me my link</b> — sends your control link to yourself (or family) on WhatsApp so it's never lost, even if you clear your browser or switch phones.</p>" +
     "<p class=\"hint\" style=\"margin:0 0 7px\">🔔 / 🧺 <b>Switch</b> — change between handing out treats at your door and leaving them outside for kids to take.</p>" +
     "<p class=\"hint\" style=\"margin:0 0 7px\">🚪 / 🌳 <b>Entrance</b> — tap to cycle where kids should come: front gate → garden gate (park side) → both. Changes your pin's ring color on the map.</p>" +
     "<p class=\"hint\" style=\"margin:0 0 7px\">📝 <b>Edit notes</b> — update your visitor notes anytime (entrance info, garden gate side, etc.).</p>" +
@@ -666,6 +668,7 @@ document.getElementById("signupForm").addEventListener("submit", function(ev){
     .catch(function(err){
       var m = String(err.message || "");
       if (m.indexOf("BAD_PASSCODE") >= 0) toast("Wrong passcode — check the WhatsApp group");
+      else if (m.indexOf("DUPLICATE") >= 0) toast("This home is already on the map! Lost your controls? Message the organizers and we'll reset it for you.");
       else if (m.indexOf("MISSING_LOCATION") >= 0) toast("Please set your pin on the map");
       else if (m.indexOf("FULL") >= 0) toast("Sign-ups are full — contact the organizer");
       else toast("Something went wrong — please try again");
@@ -725,6 +728,11 @@ document.getElementById("minewrap").addEventListener("click", function(ev){
         .catch(function(){ el.disabled = false; toast("Couldn't save — try again"); });
     } else if (act === "link") {
       copyText(manageLink(m));
+    } else if (act === "walink") {
+      var wa = document.createElement("a");
+      wa.href = "https://wa.me/?text=" + encodeURIComponent("🎃 My Jubail Trick-or-Treat control link — open this to manage our home (" + m.unit + "): " + manageLink(m));
+      wa.target = "_blank"; wa.rel = "noopener";
+      document.body.appendChild(wa); wa.click(); document.body.removeChild(wa);
     } else if (act === "move") {
       moveMode = { id: m.id, token: m.token };
       show("map");

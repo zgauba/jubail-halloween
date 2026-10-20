@@ -55,6 +55,12 @@ section.active{display:block}
 .chip .dot{display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:5px}
 .dot-on{background:var(--accent)} .dot-off{background:var(--out)}
 #refreshBtn{position:absolute; top:10px; right:10px; z-index:900; width:40px; height:40px; border-radius:50%; border:1px solid var(--line); background:rgba(26,20,36,.92); color:var(--fg); font-size:18px; cursor:pointer}
+#locBtn{position:absolute; top:58px; right:10px; z-index:900; width:40px; height:40px; border-radius:50%; border:1px solid var(--line); background:rgba(26,20,36,.92); font-size:17px; cursor:pointer}
+#locBtn.on{background:#4aa3ff; border-color:#4aa3ff}
+.me-dot{width:16px; height:16px; border-radius:50%; background:#4aa3ff; border:3px solid #fff; box-shadow:0 0 0 0 rgba(74,163,255,.55); animation:mepulse 2s infinite}
+@keyframes mepulse{to{box-shadow:0 0 0 14px rgba(74,163,255,0)}}
+@media (prefers-reduced-motion:reduce){ .me-dot{animation:none} }
+.dist{color:var(--accent-soft); font-size:11.5px; font-weight:700; white-space:nowrap}
 #moveBanner{position:absolute; top:10px; left:10px; right:58px; z-index:900; background:var(--accent); color:#2b1405; border-radius:var(--radius); padding:10px 12px; font-size:13.5px; font-weight:600; display:none}
 #moveBanner button{float:right; border:0; background:#2b1405; color:#ffd9b8; border-radius:8px; padding:3px 10px; font-size:12px; cursor:pointer}
 /* Dark-mode filter over the light OSM tiles (street mode only; satellite stays natural) */
@@ -141,6 +147,7 @@ footer{padding:10px 16px calc(12px + env(safe-area-inset-bottom,0px)); color:#6f
   <section id="sec-map" class="active">
     <div id="map"></div>
     <button id="refreshBtn" title="Refresh">⟳</button>
+    <button id="locBtn" title="Show my location">📍</button>
     <div id="moveBanner">Tap the map to set the new pin location <button id="moveCancel">Cancel</button></div>
     <div class="map-overlay">
       <button class="chip" id="baseToggle" style="font-weight:700">🗺️ Streets</button>
@@ -292,6 +299,7 @@ var pendingManage = null;
 var editNotesId = null;
 var orgNotes = {};
 var adminNoteId = null;
+var userPos = null, userMarker = null, userAcc = null, geoWatchId = null, lastListPos = null;
 
 try { myHomes = JSON.parse(localStorage.getItem("jh_homes_v1") || "[]"); } catch(e){ myHomes = []; }
 try { adminCode = localStorage.getItem("jh_admin_code"); } catch(e){}
@@ -327,6 +335,8 @@ function esc(s){ return String(s == null ? "" : s).replace(/[&<>"']/g, function(
 function typeIcon(t){ return t === "villa" ? "🏠" : t === "townhouse" ? "🏘️" : "🏢"; }
 function typeLabel(t){ return t.charAt(0).toUpperCase() + t.slice(1); }
 function gmaps(h){ return "https://www.google.com/maps/dir/?api=1&destination=" + encodeURIComponent(h.lat + "," + h.lng) + "&dir_action=navigate&travelmode=walking"; }
+function distTo(h){ return userPos ? userPos.distanceTo(L.latLng(h.lat, h.lng)) : null; }
+function fmtDist(m){ return m < 950 ? (Math.max(10, Math.round(m / 10) * 10) + " m") : ((m / 1000).toFixed(1) + " km"); }
 function gpin(h){ return "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(h.lat + "," + h.lng); }
 function manageLink(m){ return BASE + "?m=" + m.id + "~" + m.token; }
 
@@ -395,6 +405,7 @@ function renderMap(){
       (h.out_of_candy ? '<div class="pop-out">🚫 Out of candy</div>' :
         '<div>' + (h.handout === "door" ? "🔔 Ring — treats at the door" : "🧺 Help yourself outside") + '</div>') +
       (h.details ? '<div class="pop-note">💬 ' + esc(h.details) + '</div>' : "") +
+      (distTo(h) !== null ? '<div class="pop-sub" style="margin-top:4px">📍 ≈ ' + fmtDist(distTo(h)) + ' from you</div>' : "") +
       '<a class="gobtn" target="_blank" rel="noopener" href="' + gmaps(h) + '">Directions ➜</a>' +
       ' <a class="gobtn" style="background:var(--panel); color:var(--fg)!important; border:1px solid var(--line)" target="_blank" rel="noopener" href="' + gpin(h) + '">📍 View pin</a>';
     L.marker([h.lat, h.lng], { icon: icon }).bindPopup(pop).addTo(markerLayer);
@@ -416,15 +427,26 @@ function renderList(){
   if (homes.length === 0) { wrap.innerHTML = '<div class="empty">No homes have signed up yet.<br>Be the first — takes 30 seconds! 🍬</div>'; return; }
   var byV = {};
   homes.forEach(function(h){ (byV[h.village] = byV[h.village] || []).push(h); });
-  var html = "";
-  Object.keys(byV).sort().forEach(function(v){
-    var list = byV[v];
+  var vnames = Object.keys(byV);
+  if (userPos) {
+    vnames.sort(function(a, b){
+      var ma = Math.min.apply(null, byV[a].map(distTo));
+      var mb = Math.min.apply(null, byV[b].map(distTo));
+      return ma - mb;
+    });
+  } else { vnames.sort(); }
+  var html = userPos ? '<p class="hint" style="margin:0 0 10px">📍 Sorted by distance from you</p>' : "";
+  vnames.forEach(function(v){
+    var list = byV[v].slice();
+    if (userPos) list.sort(function(a, b){ return distTo(a) - distTo(b); });
     html += '<div class="village"><h3>' + esc(v) + " · " + list.length + '</h3>';
     list.forEach(function(h){
+      var d = distTo(h);
       html += '<div class="row' + (h.out_of_candy ? " outrow" : "") + '">' +
         '<span class="ic">' + typeIcon(h.home_type) + '</span>' +
         '<div class="meta"><div class="u">' + esc(h.unit) + '</div>' +
         '<div class="d">' + (h.handout === "door" ? "Treats at the door" : "Self-serve outside") + (h.details ? " · " + esc(h.details) : "") + '</div></div>' +
+        (d !== null ? '<span class="dist">' + fmtDist(d) + '</span>' : "") +
         '<span class="status ' + (h.out_of_candy ? "st-off" : "st-on") + '">' + (h.out_of_candy ? "OUT" : "🍬") + '</span>' +
         '<a target="_blank" rel="noopener" href="' + gmaps(h) + '">Go</a>' +
         '</div>';
@@ -691,6 +713,39 @@ document.getElementById("baseToggle").addEventListener("click", function(){
   applyBase();
 });
 document.getElementById("refreshBtn").addEventListener("click", function(){ loadHomes().then(function(){ toast("Updated ✓"); }); });
+
+/* ---------- my location ---------- */
+function onGeo(pos){
+  var first = !userPos;
+  userPos = L.latLng(pos.coords.latitude, pos.coords.longitude);
+  if (!userMarker) {
+    userMarker = L.marker(userPos, { icon: L.divIcon({ className: "", html: '<div class="me-dot"></div>', iconSize: [16,16], iconAnchor: [8,8] }), interactive: false, zIndexOffset: 1000 }).addTo(map);
+    userAcc = L.circle(userPos, { radius: pos.coords.accuracy || 30, color: "#4aa3ff", weight: 1, opacity: .4, fillOpacity: .08, interactive: false }).addTo(map);
+  } else {
+    userMarker.setLatLng(userPos);
+    userAcc.setLatLng(userPos).setRadius(pos.coords.accuracy || 30);
+  }
+  if (first) { map.setView(userPos, Math.max(map.getZoom(), 16)); renderMap(); }
+  if (!lastListPos || userPos.distanceTo(lastListPos) > 25) { lastListPos = userPos; renderList(); }
+}
+function stopLocate(){
+  if (geoWatchId !== null) { navigator.geolocation.clearWatch(geoWatchId); geoWatchId = null; }
+  if (userMarker) { map.removeLayer(userMarker); userMarker = null; }
+  if (userAcc) { map.removeLayer(userAcc); userAcc = null; }
+  userPos = null; lastListPos = null;
+  document.getElementById("locBtn").classList.remove("on");
+  renderList(); renderMap();
+}
+document.getElementById("locBtn").addEventListener("click", function(){
+  if (geoWatchId !== null) { stopLocate(); return; }
+  if (!navigator.geolocation) { toast("Location not available on this device"); return; }
+  this.classList.add("on");
+  show("map");
+  geoWatchId = navigator.geolocation.watchPosition(onGeo, function(){
+    toast("Couldn't get your location — check location permission");
+    stopLocate();
+  }, { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 });
+});
 
 /* ---------- organizer panel ---------- */
 function adminLoad(){

@@ -488,7 +488,11 @@ function renderList(){
 function renderMine(){
   var wrap = document.getElementById("minewrap");
   if (myHomes.length === 0) {
-    wrap.innerHTML = '<div class="empty">Nothing saved on this phone yet.<br><br>Once you sign up, your home appears here with a one-tap <b>out of candy</b> button for the night.</div>';
+    var now = new Date();
+    var rescue = (now >= new Date("2026-10-26T00:00:00+04:00") && now < new Date("2026-11-01T00:00:00+04:00"))
+      ? '<div class="notice" style="margin-bottom:14px">⚠️ <b>Halloween is this week!</b> Is your home already on the map, but nothing shows here? You\'re probably on a different phone or browser than you signed up with. <b>Message the organizers in the WhatsApp group now</b> and we\'ll send you your control link — please don\'t wait until the 31st! 🎃</div>'
+      : "";
+    wrap.innerHTML = rescue + '<div class="empty">Nothing saved on this phone yet.<br><br>Once you sign up, your home appears here with a one-tap <b>out of candy</b> button for the night.</div>';
     return;
   }
   var html = "";

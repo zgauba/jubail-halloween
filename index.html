@@ -223,8 +223,8 @@ footer{padding:10px 16px calc(12px + env(safe-area-inset-bottom,0px)); color:#6f
       <div class="field">
         <label>On the night, treats are…</label>
         <div class="seg">
-          <label><input type="radio" name="handout" value="door" checked><span>🔔 Handed out at our door</span></label>
-          <label><input type="radio" name="handout" value="self_serve"><span>🧺 Left outside — help yourself</span></label>
+          <label><input type="radio" name="handout" value="door" checked><span>🔔 We'll hand them out in person</span></label>
+          <label><input type="radio" name="handout" value="self_serve"><span>🧺 Self-serve — we'll leave treats out</span></label>
         </div>
       </div>
       <div class="field">
@@ -430,7 +430,7 @@ function renderMap(){
     var pop = '<div class="pop-title">' + typeIcon(h.home_type) + " " + esc(h.unit) + '</div>' +
       '<div class="pop-sub">' + esc(h.village) + " · " + typeLabel(h.home_type) + '</div>' +
       (h.out_of_candy ? '<div class="pop-out">🚫 Out of candy</div>' :
-        '<div>' + (h.handout === "door" ? "🔔 Ring — treats at the door" : "🧺 Help yourself outside") + '</div>') +
+        '<div>' + (h.handout === "door" ? "🔔 Treats handed out in person" : "🧺 Self-serve — help yourself") + '</div>') +
       '<div class="pop-sub" style="margin-top:4px">' + entLabel(h) + '</div>' +
       (h.details ? '<div class="pop-note">💬 ' + esc(h.details) + '</div>' : "") +
       (distTo(h) !== null ? '<div class="pop-sub" style="margin-top:4px">📍 ≈ ' + fmtDist(distTo(h)) + ' from you</div>' : "") +
@@ -473,7 +473,7 @@ function renderList(){
       html += '<div class="row' + (h.out_of_candy ? " outrow" : "") + '">' +
         '<span class="ic">' + typeIcon(h.home_type) + '</span>' +
         '<div class="meta"><div class="u">' + esc(h.unit) + '</div>' +
-        '<div class="d">' + (h.handout === "door" ? "Treats at the door" : "Self-serve outside") + (h.details ? " · " + esc(h.details) : "") + '</div></div>' +
+        '<div class="d">' + (h.handout === "door" ? "Handed out in person" : "Self-serve") + (h.details ? " · " + esc(h.details) : "") + '</div></div>' +
         entPill(h) +
         (d !== null ? '<span class="dist">' + fmtDist(d) + '</span>' : "") +
         '<span class="status ' + (h.out_of_candy ? "st-off" : "st-on") + '">' + (h.out_of_candy ? "OUT" : "🍬") + '</span>' +
@@ -506,7 +506,7 @@ function renderMine(){
         '<button class="bigtoggle ' + (out ? "tg-off" : "tg-on") + '" data-i="' + i + '" data-act="toggle">' +
           (out ? "🚫 Out of candy — tap when restocked" : "🍬 Candy available — tap when you run out") + '</button>' +
         '<div class="cardbtns">' +
-          '<button class="btn btn-ghost" data-i="' + i + '" data-act="handout">' + (live.handout === "door" ? "🧺 Switch to help-yourself" : "🔔 Switch to at-the-door") + '</button>' +
+          '<button class="btn btn-ghost" data-i="' + i + '" data-act="handout">' + (live.handout === "door" ? "🧺 Switch to self-serve" : "🔔 Switch to in-person") + '</button>' +
           '<button class="btn btn-ghost" data-i="' + i + '" data-act="entrance">' + (live.entrance === "garden" ? "🌳 Garden Gate" : live.entrance === "both" ? "🚪🌳 Both Gates" : "🚪 Front Gate") + ' — tap to change</button>' +
           '<button class="btn btn-ghost" data-i="' + i + '" data-act="notes">📝 Edit notes</button>' +
           '<button class="btn btn-ghost" data-i="' + i + '" data-act="link">🔗 Copy control link</button>' +
@@ -522,7 +522,7 @@ function renderMine(){
             '<button class="btn btn-ghost" data-i="' + i + '" data-act="notescancel">Cancel</button>' +
           '</div></div>'
         : (live.details ? '<p class="hint" style="margin:8px 0 0">💬 ' + esc(live.details) + '</p>' : "")) +
-        '<p class="hint" style="margin:8px 0 0">' + (live.handout === "door" ? "Currently: 🔔 treats handed out at your door" : "Currently: 🧺 treats left outside — help yourself") + ' · ' + entLabel(live) + '</p>' +
+        '<p class="hint" style="margin:8px 0 0">' + (live.handout === "door" ? "Currently: 🔔 handing out in person" : "Currently: 🧺 self-serve — treats left out") + ' · ' + entLabel(live) + '</p>' +
         ''
       : '<div class="cardbtns"><button class="btn btn-ghost" data-i="' + i + '" data-act="forget">Clear from this phone</button></div>') +
       '</div>';
@@ -532,7 +532,7 @@ function renderMine(){
     "<p class=\"hint\" style=\"margin:0 0 7px\">🍬 / 🚫 <b>Big button</b> — tap when you run out of candy; your house instantly greys out on everyone's map so families skip it. Tap again when restocked.</p>" +
     "<p class=\"hint\" style=\"margin:0 0 7px\">🔗 <b>Copy control link</b> — your private remote control. Open the link on any phone to get these same buttons there. Don't post it in the group.</p>" +
     "<p class=\"hint\" style=\"margin:0 0 7px\">📲 <b>WhatsApp me my link</b> — sends your control link to yourself (or family) on WhatsApp so it's never lost, even if you clear your browser or switch phones.</p>" +
-    "<p class=\"hint\" style=\"margin:0 0 7px\">🔔 / 🧺 <b>Switch</b> — change between handing out treats at your door and leaving them outside for kids to take.</p>" +
+    "<p class=\"hint\" style=\"margin:0 0 7px\">🔔 / 🧺 <b>Switch</b> — change between handing treats out in person and self-serve (treats left out for kids to take).</p>" +
     "<p class=\"hint\" style=\"margin:0 0 7px\">🚪 / 🌳 <b>Entrance</b> — tap to cycle where kids should come: front gate → garden gate (park side) → both. Changes your pin's ring color on the map.</p>" +
     "<p class=\"hint\" style=\"margin:0 0 7px\">📝 <b>Edit notes</b> — update your visitor notes anytime (entrance info, garden gate side, etc.).</p>" +
     "<p class=\"hint\" style=\"margin:0 0 7px\">📍 <b>Fix pin</b> — move your home's location if the pin landed in the wrong spot.</p>" +

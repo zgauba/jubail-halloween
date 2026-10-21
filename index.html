@@ -662,6 +662,9 @@ document.getElementById("signupForm").addEventListener("submit", function(ev){
   if (!pickMarker) { toast("Please set your pin on the map"); return; }
   if (!pass) { toast("Please enter the group passcode"); return; }
   var p = pickMarker.getLatLng();
+  if (p.distanceTo(L.latLng(24.535, 54.483)) > 5000) {
+    if (!window.confirm("Your pin looks far from Jubail Island — are you sure it's placed on your home?\n\nOK = keep this pin anyway\nCancel = go back and fix it (tip: zoom the map to your villa, or paste your home's Google Maps coordinates)")) return;
+  }
   var btn = document.getElementById("submitBtn");
   btn.disabled = true; btn.textContent = "Adding…";
   rpc("jh_signup", { p_passcode: pass, p_home_type: htype, p_unit: unit, p_village: village, p_details: details, p_handout: handout, p_lat: p.lat, p_lng: p.lng })

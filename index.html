@@ -495,7 +495,6 @@ function renderList(){
         '<div class="meta"><div class="u">' + esc(h.unit) + '</div>' +
         '<div class="d">' + (h.handout === "door" ? "Handed out in person" : "Self-serve") + (h.details ? " · " + esc(h.details) : "") + '</div></div>' +
         entPill(h) +
-        (h.treats === "non_food" ? '<span class="ent-pill nf-pill">🎃 Non-food</span>' : h.treats === "both" ? '<span class="ent-pill nf-pill">🍬🎃 Both</span>' : "") +
         (d !== null ? '<span class="dist">' + fmtDist(d) + '</span>' : "") +
         '<span class="status ' + (h.out_of_candy ? "st-off" : "st-on") + '">' + (h.out_of_candy ? "OUT" : treatGlyph(h)) + '</span>' +
         '<a target="_blank" rel="noopener" href="' + gmaps(h) + '">Go</a>' +

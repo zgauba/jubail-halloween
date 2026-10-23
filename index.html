@@ -163,7 +163,7 @@ footer{padding:10px 16px calc(12px + env(safe-area-inset-bottom,0px)); color:#6f
     <div class="map-overlay">
       <button class="chip" id="baseToggle" style="font-weight:700">🗺️ Streets</button>
       <span class="chip"><span class="dot dot-on"></span>Treats available</span>
-      <span class="chip"><span class="dot dot-off"></span>Out of candy</span>
+      <span class="chip"><span class="dot dot-off"></span>Out of treats</span>
       <span class="chip"><span class="ring"></span>Front Gate</span>
       <span class="chip"><span class="ring g"></span>Garden Gate</span>
       <span class="chip"><span class="ring b"></span>Both Gates</span>
@@ -276,7 +276,7 @@ footer{padding:10px 16px calc(12px + env(safe-area-inset-bottom,0px)); color:#6f
 
   <section id="sec-mine">
     <h2>My home — your night-of controls</h2>
-    <p class="hint" style="margin:-6px 0 14px">Everything about your own sign-up lives here: your candy status, your pin, and your private control link.</p>
+    <p class="hint" style="margin:-6px 0 14px">Everything about your own sign-up lives here: your treats status, your pin, and your private control link.</p>
     <details class="notice">
       <summary>📢 Community reminder — decorations allowed Oct 21 – Nov 10</summary>
       <ul>
@@ -375,6 +375,11 @@ function entPill(h){
   if (h.entrance === "both") return '<span class="ent-pill ent-both">🚪🌳 Both Gates</span>';
   return '<span class="ent-pill ent-front">🚪 Front Gate</span>';
 }
+function treatGlyph(h){
+  if (h.treats === "non_food") return '<span class="tealpump">🎃</span>';
+  if (h.treats === "both") return '🍬<span class="tealpump">🎃</span>';
+  return "🍬";
+}
 function fmtDist(m){ return m < 950 ? (Math.max(10, Math.round(m / 10) * 10) + " m") : ((m / 1000).toFixed(1) + " km"); }
 function gpin(h){ return "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(h.lat + "," + h.lng); }
 function manageLink(m){ return BASE + "?m=" + m.id + "~" + m.token; }
@@ -438,12 +443,11 @@ function renderMap(){
   homes.forEach(function(h){
     var cls = (h.out_of_candy ? "pin out" : "pin") + entClass(h);
     var em = h.out_of_candy ? "🚫" :
-      (h.treats === "non_food" ? '<span class="tealpump">🎃</span>' :
-       h.treats === "both" ? '<span style="font-size:11.5px; letter-spacing:-2px">🍬<span class="tealpump">🎃</span></span>' : "🍬");
+      (h.treats === "both" ? '<span style="font-size:11.5px; letter-spacing:-2px">' + treatGlyph(h) + '</span>' : treatGlyph(h));
     var icon = L.divIcon({ className: "", html: '<div class="' + cls + '">' + em + "</div>", iconSize: [34,34], iconAnchor: [17,17] });
     var pop = '<div class="pop-title">' + typeIcon(h.home_type) + " " + esc(h.unit) + '</div>' +
       '<div class="pop-sub">' + esc(h.village) + " · " + typeLabel(h.home_type) + '</div>' +
-      (h.out_of_candy ? '<div class="pop-out">🚫 Out of candy</div>' :
+      (h.out_of_candy ? '<div class="pop-out">🚫 Out of treats</div>' :
         '<div>' + (h.handout === "door" ? "🔔 Treats handed out in person" : "🧺 Self-serve — help yourself") + '</div>') +
       '<div class="pop-sub" style="margin-top:4px">' + entLabel(h) + '</div>' +
       (h.treats === "non_food" ? '<div style="margin-top:5px"><span class="ent-pill nf-pill">🎃 Non-food treats (allergy-friendly)</span></div>' :
@@ -463,7 +467,7 @@ function renderMap(){
 
 function renderCounts(){
   var active = homes.filter(function(h){ return !h.out_of_candy; }).length;
-  document.getElementById("counts").textContent = homes.length === 0 ? "no homes yet — be the first!" : (homes.length + " homes · " + active + " with candy");
+  document.getElementById("counts").textContent = homes.length === 0 ? "no homes yet — be the first!" : (homes.length + " homes · " + active + " with treats");
 }
 
 function renderList(){
@@ -493,7 +497,7 @@ function renderList(){
         entPill(h) +
         (h.treats === "non_food" ? '<span class="ent-pill nf-pill">🎃 Non-food</span>' : h.treats === "both" ? '<span class="ent-pill nf-pill">🍬🎃 Both</span>' : "") +
         (d !== null ? '<span class="dist">' + fmtDist(d) + '</span>' : "") +
-        '<span class="status ' + (h.out_of_candy ? "st-off" : "st-on") + '">' + (h.out_of_candy ? "OUT" : "🍬") + '</span>' +
+        '<span class="status ' + (h.out_of_candy ? "st-off" : "st-on") + '">' + (h.out_of_candy ? "OUT" : treatGlyph(h)) + '</span>' +
         '<a target="_blank" rel="noopener" href="' + gmaps(h) + '">Go</a>' +
         '</div>';
     });
@@ -509,7 +513,7 @@ function renderMine(){
     var rescue = (now >= new Date("2026-10-26T00:00:00+04:00") && now < new Date("2026-11-01T00:00:00+04:00"))
       ? '<div class="notice" style="margin-bottom:14px">⚠️ <b>Halloween is this week!</b> Is your home already on the map, but nothing shows here? You\'re probably on a different phone or browser than you signed up with. <b>Message the organizers in the WhatsApp group now</b> and we\'ll send you your control link — please don\'t wait until the 31st! 🎃</div>'
       : "";
-    wrap.innerHTML = rescue + '<div class="empty">Nothing saved on this phone yet.<br><br>Once you sign up, your home appears here with a one-tap <b>out of candy</b> button for the night.</div>';
+    wrap.innerHTML = rescue + '<div class="empty">Nothing saved on this phone yet.<br><br>Once you sign up, your home appears here with a one-tap <b>out of treats</b> button for the night.</div>';
     return;
   }
   var html = "";
@@ -525,7 +529,7 @@ function renderMine(){
       : "") +
       (live ?
         '<button class="bigtoggle ' + (out ? "tg-off" : "tg-on") + '" data-i="' + i + '" data-act="toggle">' +
-          (out ? "🚫 Out of candy — tap when restocked" : "🍬 Candy available — tap when you run out") + '</button>' +
+          (out ? "🚫 Out of treats — tap when restocked" : treatGlyph(live) + " Treats available — tap when you run out") + '</button>' +
         '<div class="cardbtns">' +
           '<button class="btn btn-ghost" data-i="' + i + '" data-act="handout">' + (live.handout === "door" ? "🧺 Switch to self-serve" : "🔔 Switch to in-person") + '</button>' +
           '<button class="btn btn-ghost" data-i="' + i + '" data-act="entrance">' + (live.entrance === "garden" ? "🌳 Garden Gate" : live.entrance === "both" ? "🚪🌳 Both Gates" : "🚪 Front Gate") + ' — tap to change</button>' +
@@ -551,7 +555,7 @@ function renderMine(){
   });
   html += '<div class="card" style="background:transparent">' +
     '<div class="s" style="margin:0 0 8px; font-weight:700; color:var(--accent-soft); text-transform:uppercase; letter-spacing:.06em; font-size:11.5px">What each button does</div>' +
-    "<p class=\"hint\" style=\"margin:0 0 7px\">🍬 / 🚫 <b>Big button</b> — tap when you run out of candy; your house instantly greys out on everyone's map so families skip it. Tap again when restocked.</p>" +
+    "<p class=\"hint\" style=\"margin:0 0 7px\">🍬 / 🚫 <b>Big button</b> — tap when you run out of treats; your house instantly greys out on everyone's map so families skip it. Tap again when restocked.</p>" +
     "<p class=\"hint\" style=\"margin:0 0 7px\">🔗 <b>Copy control link</b> — your private remote control. Open the link on any phone to get these same buttons there. Don't post it in the group.</p>" +
     "<p class=\"hint\" style=\"margin:0 0 7px\">📲 <b>WhatsApp me my link</b> — sends your control link to yourself (or family) on WhatsApp so it's never lost, even if you clear your browser or switch phones.</p>" +
     "<p class=\"hint\" style=\"margin:0 0 7px\">🔔 / 🧺 <b>Switch</b> — change between handing treats out in person and self-serve (treats left out for kids to take).</p>" +
@@ -861,7 +865,7 @@ function renderAdmin(){
   hs.forEach(function(h){ if (h.removed) rmN++; else if (h.out_of_candy) outN++; else activeN++; });
   var html = '<div class="card">' +
     '<div class="t">Season ' + esc(adminData.season) + '</div>' +
-    '<div class="s">' + activeN + ' with candy · ' + outN + ' out · ' + rmN + ' removed</div>' +
+    '<div class="s">' + activeN + ' with treats · ' + outN + ' out · ' + rmN + ' removed</div>' +
     '<div class="s">Sign-up passcode: <b style="color:var(--accent-soft)">' + esc(adminData.passcode) + '</b></div>' +
     '<div class="adminbar">' +
       '<button class="btn btn-ghost" data-aact="csv">⬇️ Export CSV</button>' +
@@ -892,7 +896,7 @@ function renderAdmin(){
       '<div class="meta"><div class="u">' + esc(h.unit) + (h.treats === "non_food" ? " 🎃" : h.treats === "both" ? " 🍬🎃" : "") + (h.org_note ? " 📣" : "") + '</div>' +
       '<div class="d">' + esc(h.village) + (h.details ? " · " + esc(h.details) : "") + '</div></div>' +
       (h.removed ? '<span class="status st-off">REMOVED</span>' :
-        '<span class="status ' + (h.out_of_candy ? "st-off" : "st-on") + '">' + (h.out_of_candy ? "OUT" : "🍬") + '</span>') +
+        '<span class="status ' + (h.out_of_candy ? "st-off" : "st-on") + '">' + (h.out_of_candy ? "OUT" : treatGlyph(h)) + '</span>') +
       (h.removed ?
         '<button class="mini" data-aact="arestore" data-id="' + h.id + '">Restore</button>' :
         '<button class="mini" data-aact="acandy" data-id="' + h.id + '" data-out="' + (h.out_of_candy ? "0" : "1") + '">' + (h.out_of_candy ? "🍬 Restock" : "🚫 Mark out") + '</button>' +

@@ -66,7 +66,7 @@ section.active{display:block}
 /* Dark-mode filter over the light OSM tiles (street mode only; satellite stays natural) */
 .streetmode .leaflet-tile-pane{filter:invert(1) hue-rotate(200deg) brightness(.85) contrast(.9) saturate(.6)}
 .pin{position:relative; width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:16px; background:var(--accent); border:2.5px solid #fff; box-shadow:0 2px 8px rgba(0,0,0,.5)}
-.nfdot{position:absolute; top:-5px; right:-5px; width:13px; height:13px; border-radius:50%; background:#2dd4bf; border:2px solid #15101c}
+.tealpump{display:inline-block; filter:hue-rotate(145deg) saturate(1.5)}
 .pin.out{background:var(--out); opacity:.8}
 .pin.e-garden{border-color:#7ddf8a}
 .pin.e-both{border-color:#fff #7ddf8a #7ddf8a #fff}
@@ -78,8 +78,6 @@ section.active{display:block}
 .ring.g{border-color:#7ddf8a}
 .ring.b{border-color:#fff #7ddf8a #7ddf8a #fff}
 .nf-pill{background:rgba(45,212,191,.13); color:#5eead4; border:1px solid rgba(45,212,191,.4)}
-.checkline{display:flex; gap:10px; align-items:flex-start; cursor:pointer; font-size:13.5px; line-height:1.5; font-weight:400; text-transform:none; letter-spacing:0; color:var(--fg)}
-.checkline input{width:19px; height:19px; accent-color:#2dd4bf; margin-top:1px; flex:none}
 .leaflet-popup-content-wrapper{background:var(--panel2); color:var(--fg); border-radius:12px}
 .leaflet-popup-tip{background:var(--panel2)}
 .leaflet-popup-content{margin:12px 14px; font:13.5px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
@@ -169,7 +167,7 @@ footer{padding:10px 16px calc(12px + env(safe-area-inset-bottom,0px)); color:#6f
       <span class="chip"><span class="ring"></span>Front Gate</span>
       <span class="chip"><span class="ring g"></span>Garden Gate</span>
       <span class="chip"><span class="ring b"></span>Both Gates</span>
-      <span class="chip"><span class="dot" style="background:#2dd4bf"></span>🎁 Non-food treats</span>
+      <span class="chip"><span class="tealpump">🎃</span> Non-food treats</span>
     </div>
   </section>
 
@@ -241,7 +239,12 @@ footer{padding:10px 16px calc(12px + env(safe-area-inset-bottom,0px)); color:#6f
         </div>
       </div>
       <div class="field">
-        <label class="checkline"><input type="checkbox" id="nonfood"><span>🎁 We'll also have <b>non-food treats</b> (stickers, small toys, glow sticks) — great for kids with allergies or dietary restrictions</span></label>
+        <label>What will you hand out?</label>
+        <div class="seg">
+          <label><input type="radio" name="treats" value="candy" checked><span>🍬 Candy</span></label>
+          <label><input type="radio" name="treats" value="non_food"><span><span class="tealpump">🎃</span> Non-food treats (stickers, toys — allergy-friendly)</span></label>
+          <label><input type="radio" name="treats" value="both"><span>🍬<span class="tealpump">🎃</span> Both</span></label>
+        </div>
       </div>
       <div class="field">
         <label for="details">Notes for visitors (optional)</label>
@@ -433,14 +436,17 @@ function renderMap(){
   markerLayer.clearLayers();
   homes.forEach(function(h){
     var cls = (h.out_of_candy ? "pin out" : "pin") + entClass(h);
-    var em = h.out_of_candy ? "🚫" : "🍬";
-    var icon = L.divIcon({ className: "", html: '<div class="' + cls + '">' + em + (h.non_food ? '<span class="nfdot"></span>' : "") + "</div>", iconSize: [34,34], iconAnchor: [17,17] });
+    var em = h.out_of_candy ? "🚫" :
+      (h.treats === "non_food" ? '<span class="tealpump">🎃</span>' :
+       h.treats === "both" ? '<span style="font-size:11.5px; letter-spacing:-2px">🍬<span class="tealpump">🎃</span></span>' : "🍬");
+    var icon = L.divIcon({ className: "", html: '<div class="' + cls + '">' + em + "</div>", iconSize: [34,34], iconAnchor: [17,17] });
     var pop = '<div class="pop-title">' + typeIcon(h.home_type) + " " + esc(h.unit) + '</div>' +
       '<div class="pop-sub">' + esc(h.village) + " · " + typeLabel(h.home_type) + '</div>' +
       (h.out_of_candy ? '<div class="pop-out">🚫 Out of candy</div>' :
         '<div>' + (h.handout === "door" ? "🔔 Treats handed out in person" : "🧺 Self-serve — help yourself") + '</div>') +
       '<div class="pop-sub" style="margin-top:4px">' + entLabel(h) + '</div>' +
-      (h.non_food ? '<div style="margin-top:5px"><span class="ent-pill nf-pill">🎁 Non-food treats available</span></div>' : "") +
+      (h.treats === "non_food" ? '<div style="margin-top:5px"><span class="ent-pill nf-pill">🎃 Non-food treats (allergy-friendly)</span></div>' :
+       h.treats === "both" ? '<div style="margin-top:5px"><span class="ent-pill nf-pill">🍬🎃 Candy + non-food treats</span></div>' : "") +
       (h.details ? '<div class="pop-note">💬 ' + esc(h.details) + '</div>' : "") +
       (distTo(h) !== null ? '<div class="pop-sub" style="margin-top:4px">📍 ≈ ' + fmtDist(distTo(h)) + ' from you</div>' : "") +
       '<a class="gobtn" target="_blank" rel="noopener" href="' + gmaps(h) + '">Directions ➜</a>' +
@@ -484,7 +490,7 @@ function renderList(){
         '<div class="meta"><div class="u">' + esc(h.unit) + '</div>' +
         '<div class="d">' + (h.handout === "door" ? "Handed out in person" : "Self-serve") + (h.details ? " · " + esc(h.details) : "") + '</div></div>' +
         entPill(h) +
-        (h.non_food ? '<span class="ent-pill nf-pill">🎁 Non-food</span>' : "") +
+        (h.treats === "non_food" ? '<span class="ent-pill nf-pill">🎃 Non-food</span>' : h.treats === "both" ? '<span class="ent-pill nf-pill">🍬🎃 Both</span>' : "") +
         (d !== null ? '<span class="dist">' + fmtDist(d) + '</span>' : "") +
         '<span class="status ' + (h.out_of_candy ? "st-off" : "st-on") + '">' + (h.out_of_candy ? "OUT" : "🍬") + '</span>' +
         '<a target="_blank" rel="noopener" href="' + gmaps(h) + '">Go</a>' +
@@ -522,7 +528,7 @@ function renderMine(){
         '<div class="cardbtns">' +
           '<button class="btn btn-ghost" data-i="' + i + '" data-act="handout">' + (live.handout === "door" ? "🧺 Switch to self-serve" : "🔔 Switch to in-person") + '</button>' +
           '<button class="btn btn-ghost" data-i="' + i + '" data-act="entrance">' + (live.entrance === "garden" ? "🌳 Garden Gate" : live.entrance === "both" ? "🚪🌳 Both Gates" : "🚪 Front Gate") + ' — tap to change</button>' +
-          '<button class="btn btn-ghost" data-i="' + i + '" data-act="nonfood">' + (live.non_food ? "🎁 Non-food treats: ON" : "🎁 Non-food treats: OFF") + '</button>' +
+          '<button class="btn btn-ghost" data-i="' + i + '" data-act="treats">' + (live.treats === "non_food" ? "🎃 Non-food treats" : live.treats === "both" ? "🍬🎃 Candy + non-food" : "🍬 Candy only") + ' — tap to change</button>' +
           '<button class="btn btn-ghost" data-i="' + i + '" data-act="notes">📝 Edit notes</button>' +
           '<button class="btn btn-ghost" data-i="' + i + '" data-act="link">🔗 Copy control link</button>' +
           '<button class="btn btn-ghost" data-i="' + i + '" data-act="walink">📲 WhatsApp me my link</button>' +
@@ -537,7 +543,7 @@ function renderMine(){
             '<button class="btn btn-ghost" data-i="' + i + '" data-act="notescancel">Cancel</button>' +
           '</div></div>'
         : (live.details ? '<p class="hint" style="margin:8px 0 0">💬 ' + esc(live.details) + '</p>' : "")) +
-        '<p class="hint" style="margin:8px 0 0">' + (live.handout === "door" ? "Currently: 🔔 handing out in person" : "Currently: 🧺 self-serve — treats left out") + ' · ' + entLabel(live) + (live.non_food ? ' · 🎁 non-food treats too' : '') + '</p>' +
+        '<p class="hint" style="margin:8px 0 0">' + (live.handout === "door" ? "Currently: 🔔 handing out in person" : "Currently: 🧺 self-serve — treats left out") + ' · ' + entLabel(live) + (live.treats === "non_food" ? " · 🎃 non-food treats" : live.treats === "both" ? " · 🍬🎃 candy + non-food" : "") + '</p>' +
         ''
       : '<div class="cardbtns"><button class="btn btn-ghost" data-i="' + i + '" data-act="forget">Clear from this phone</button></div>') +
       '</div>';
@@ -549,7 +555,7 @@ function renderMine(){
     "<p class=\"hint\" style=\"margin:0 0 7px\">📲 <b>WhatsApp me my link</b> — sends your control link to yourself (or family) on WhatsApp so it's never lost, even if you clear your browser or switch phones.</p>" +
     "<p class=\"hint\" style=\"margin:0 0 7px\">🔔 / 🧺 <b>Switch</b> — change between handing treats out in person and self-serve (treats left out for kids to take).</p>" +
     "<p class=\"hint\" style=\"margin:0 0 7px\">🚪 / 🌳 <b>Entrance</b> — tap to cycle where kids should come: front gate → garden gate (park side) → both. Changes your pin's ring color on the map.</p>" +
-    "<p class=\"hint\" style=\"margin:0 0 7px\">🎁 <b>Non-food treats</b> — switch ON if you'll also have stickers, small toys or glow sticks for kids with allergies or dietary restrictions. Adds a teal badge to your pin so families know.</p>" +
+    "<p class=\"hint\" style=\"margin:0 0 7px\">🍬 / 🎃 <b>Treats type</b> — tap to cycle: candy only → non-food treats (stickers, small toys, glow sticks — great for kids with allergies) → both. Non-food homes show a <b>teal pumpkin</b> on the map so families with dietary restrictions can spot them.</p>" +
     "<p class=\"hint\" style=\"margin:0 0 7px\">📝 <b>Edit notes</b> — update your visitor notes anytime (entrance info, garden gate side, etc.).</p>" +
     "<p class=\"hint\" style=\"margin:0 0 7px\">📍 <b>Fix pin</b> — move your home's location if the pin landed in the wrong spot.</p>" +
     "<p class=\"hint\" style=\"margin:0\"><b>Remove</b> — take your home off the map entirely (asks you to tap twice).</p>" +
@@ -684,7 +690,8 @@ document.getElementById("signupForm").addEventListener("submit", function(ev){
       myHomes.push({ id: res.id, token: res.edit_token, unit: unit, village: village });
       saveMine();
       if (entrance !== "front") { rpc("jh_set_entrance", { p_id: res.id, p_token: res.edit_token, p_entrance: entrance }).catch(function(){}); }
-      if (document.getElementById("nonfood").checked) { rpc("jh_set_nonfood", { p_id: res.id, p_token: res.edit_token, p_on: true }).catch(function(){}); }
+      var treats = document.querySelector('input[name=treats]:checked').value;
+      if (treats !== "candy") { rpc("jh_set_treats", { p_id: res.id, p_token: res.edit_token, p_treats: treats }).catch(function(){}); }
       document.getElementById("signupForm").reset();
       document.getElementById("villageOther").style.display = "none";
       if (pickMarker) { pickMap.removeLayer(pickMarker); pickMarker = null; updateCoordStatus(); }
@@ -730,12 +737,13 @@ document.getElementById("minewrap").addEventListener("click", function(ev){
       rpc("jh_set_handout", { p_id: m.id, p_token: m.token, p_handout: newMode })
         .then(function(ok){ if (!ok) toast("Couldn't update — entry not found"); else toast("Updated ✓"); return loadHomes(); })
         .catch(function(){ toast("Couldn't update — try again"); });
-    } else if (act === "nonfood") {
+    } else if (act === "treats") {
       var ln = null; homes.forEach(function(h){ if (h.id === m.id) ln = h; });
-      var nv = !(ln && ln.non_food);
+      var cur = ln ? ln.treats : "candy";
+      var nxt = cur === "candy" ? "non_food" : (cur === "non_food" ? "both" : "candy");
       el.disabled = true;
-      rpc("jh_set_nonfood", { p_id: m.id, p_token: m.token, p_on: nv })
-        .then(function(ok){ if (!ok) toast("Couldn't update — entry not found"); else toast(nv ? "🎁 Non-food badge added to your pin" : "Updated ✓"); return loadHomes(); })
+      rpc("jh_set_treats", { p_id: m.id, p_token: m.token, p_treats: nxt })
+        .then(function(ok){ if (!ok) toast("Couldn't update — entry not found"); else toast("Updated ✓"); return loadHomes(); })
         .catch(function(){ toast("Couldn't update — try again"); });
     } else if (act === "acknote") {
       el.disabled = true;
@@ -880,7 +888,7 @@ function renderAdmin(){
     byV[v].forEach(function(h){
     html += '<div class="row' + (h.removed ? " rmrow outrow" : (h.out_of_candy ? " outrow" : "")) + '">' +
       '<span class="ic">' + typeIcon(h.home_type) + '</span>' +
-      '<div class="meta"><div class="u">' + esc(h.unit) + (h.non_food ? " 🎁" : "") + (h.org_note ? " 📣" : "") + '</div>' +
+      '<div class="meta"><div class="u">' + esc(h.unit) + (h.treats === "non_food" ? " 🎃" : h.treats === "both" ? " 🍬🎃" : "") + (h.org_note ? " 📣" : "") + '</div>' +
       '<div class="d">' + esc(h.village) + (h.details ? " · " + esc(h.details) : "") + '</div></div>' +
       (h.removed ? '<span class="status st-off">REMOVED</span>' :
         '<span class="status ' + (h.out_of_candy ? "st-off" : "st-on") + '">' + (h.out_of_candy ? "OUT" : "🍬") + '</span>') +
@@ -941,9 +949,9 @@ document.getElementById("adminPanel").addEventListener("click", function(ev){
     var hs = (adminData && adminData.homes) || [];
     var NL = String.fromCharCode(10);
     function q(v){ v = v == null ? "" : String(v); return '"' + v.replace(/"/g, '""') + '"'; }
-    var lines = [["unit","village","type","handout","entrance","non_food","out_of_candy","removed","lat","lng","notes","created_at"].join(",")];
+    var lines = [["unit","village","type","handout","entrance","treats","out_of_candy","removed","lat","lng","notes","created_at"].join(",")];
     hs.forEach(function(h){
-      lines.push([q(h.unit), q(h.village), q(h.home_type), q(h.handout), q(h.entrance), q(h.non_food), q(h.out_of_candy), q(h.removed), q(h.lat), q(h.lng), q(h.details), q(h.created_at)].join(","));
+      lines.push([q(h.unit), q(h.village), q(h.home_type), q(h.handout), q(h.entrance), q(h.treats), q(h.out_of_candy), q(h.removed), q(h.lat), q(h.lng), q(h.details), q(h.created_at)].join(","));
     });
     var blob = new Blob([lines.join(NL)], { type: "text/csv" });
     var a = document.createElement("a");

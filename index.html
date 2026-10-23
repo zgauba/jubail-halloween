@@ -242,9 +242,9 @@ footer{padding:10px 16px calc(12px + env(safe-area-inset-bottom,0px)); color:#6f
       <div class="field">
         <label>What will you hand out?</label>
         <div class="seg">
-          <label><input type="radio" name="treats" value="candy" checked><span>🍬 Candy</span></label>
-          <label><input type="radio" name="treats" value="non_food"><span><span class="tealpump">🎃</span> Non-food treats (stickers, toys — allergy-friendly)</span></label>
-          <label><input type="radio" name="treats" value="both"><span>🍬<span class="tealpump">🎃</span> Both</span></label>
+          <label><input type="radio" name="treats" value="candy" checked><span>🍬 Candy only</span></label>
+          <label><input type="radio" name="treats" value="non_food"><span><span class="tealpump">🎃</span> Non-food treats only — no candy (stickers, toys — allergy-friendly)</span></label>
+          <label><input type="radio" name="treats" value="both"><span>🍬<span class="tealpump">🎃</span> Both — candy + non-food treats</span></label>
         </div>
       </div>
       <div class="field">
@@ -532,7 +532,7 @@ function renderMine(){
         '<div class="cardbtns">' +
           '<button class="btn btn-ghost" data-i="' + i + '" data-act="handout">' + (live.handout === "door" ? "🧺 Switch to self-serve" : "🔔 Switch to in-person") + '</button>' +
           '<button class="btn btn-ghost" data-i="' + i + '" data-act="entrance">' + (live.entrance === "garden" ? "🌳 Garden Gate" : live.entrance === "both" ? "🚪🌳 Both Gates" : "🚪 Front Gate") + ' — tap to change</button>' +
-          '<button class="btn btn-ghost" data-i="' + i + '" data-act="treats">' + (live.treats === "non_food" ? "🎃 Non-food treats" : live.treats === "both" ? "🍬🎃 Candy + non-food" : "🍬 Candy only") + ' — tap to change</button>' +
+          '<button class="btn btn-ghost" data-i="' + i + '" data-act="treats">' + (live.treats === "non_food" ? "🎃 Non-food only (no candy)" : live.treats === "both" ? "🍬🎃 Both — candy + non-food" : "🍬 Candy only") + ' — tap to change</button>' +
           '<button class="btn btn-ghost" data-i="' + i + '" data-act="notes">📝 Edit notes</button>' +
           '<button class="btn btn-ghost" data-i="' + i + '" data-act="link">🔗 Copy control link</button>' +
           '<button class="btn btn-ghost" data-i="' + i + '" data-act="walink">📲 WhatsApp me my link</button>' +

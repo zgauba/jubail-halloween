@@ -900,6 +900,7 @@ function renderAdmin(){
         '<button class="mini" data-aact="arestore" data-id="' + h.id + '">Restore</button>' :
         '<button class="mini" data-aact="acandy" data-id="' + h.id + '" data-out="' + (h.out_of_candy ? "0" : "1") + '">' + (h.out_of_candy ? "🍬 Restock" : "🚫 Mark out") + '</button>' +
         '<button class="mini" data-aact="anoteform" data-id="' + h.id + '">✉️ Note</button>' +
+        '<button class="mini" data-aact="alink" data-id="' + h.id + '">🔗 Link</button>' +
         '<button class="mini" data-aact="aremove" data-id="' + h.id + '">Remove</button>') +
       (adminNoteId === h.id ?
         '<div style="width:100%; margin-top:8px">' +
@@ -949,6 +950,11 @@ document.getElementById("adminPanel").addEventListener("click", function(ev){
     rpc("jh_admin_new_season", { p_code: adminCode, p_label: ns })
       .then(function(){ toast("Season " + ns + " started 🎃"); didFit = false; adminLoad(); loadHomes(); })
       .catch(function(){ toast("Couldn't start new season"); });
+  } else if (act === "alink") {
+    var lh = null;
+    ((adminData && adminData.homes) || []).forEach(function(h){ if (h.id === id) lh = h; });
+    if (!lh || !lh.edit_token) { toast("Token not loaded — tap Refresh and try again"); return; }
+    copyText(BASE + "?m=" + lh.id + "~" + lh.edit_token);
   } else if (act === "csv") {
     var hs = (adminData && adminData.homes) || [];
     var NL = String.fromCharCode(10);

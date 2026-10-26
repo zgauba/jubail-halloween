@@ -140,7 +140,11 @@ textarea{min-height:64px; resize:vertical; font-family:inherit}
 #toast{position:fixed; left:50%; transform:translateX(-50%); bottom:calc(24px + env(safe-area-inset-bottom,0px)); background:#efe8f7; color:#241a2f; padding:11px 18px; border-radius:999px; font-size:13.5px; font-weight:600; z-index:2000; display:none; max-width:88vw; text-align:center; box-shadow:0 6px 24px rgba(0,0,0,.5)}
 footer{padding:10px 16px calc(12px + env(safe-area-inset-bottom,0px)); color:#6f6885; font-size:11px; text-align:center}
 .printhead{display:none}
+.pmapwrap{display:none}
+.pnum{display:none}
 @media print{
+  .pmapwrap{display:block; margin:0 0 8px; break-inside:avoid; page-break-inside:avoid}
+  .pnum{display:inline; font-weight:800; margin-right:4px}
   body{background:#fff !important; color:#000}
   header, nav, footer, #sec-map, #sec-signup, #sec-mine, #sec-admin, .notice, .printrow, .row a, .dist, #toast, #listwrap p.hint{display:none !important}
   main{padding:0}
@@ -490,6 +494,33 @@ function renderCounts(){
   document.getElementById("counts").textContent = homes.length === 0 ? "no homes yet — be the first!" : (homes.length + " homes · " + active + " with treats");
 }
 
+function villagePrintMap(list){
+  if (list.length === 0) return "";
+  var minLa = 90, maxLa = -90, minLo = 180, maxLo = -180;
+  list.forEach(function(h){
+    if (h.lat < minLa) minLa = h.lat; if (h.lat > maxLa) maxLa = h.lat;
+    if (h.lng < minLo) minLo = h.lng; if (h.lng > maxLo) maxLo = h.lng;
+  });
+  var padLa = Math.max((maxLa - minLa) * 0.15, 0.0004);
+  var padLo = Math.max((maxLo - minLo) * 0.15, 0.0004);
+  minLa -= padLa; maxLa += padLa; minLo -= padLo; maxLo += padLo;
+  var mPerLa = 111320, mPerLo = 111320 * Math.cos(24.535 * Math.PI / 180);
+  var wM = (maxLo - minLo) * mPerLo, hM = (maxLa - minLa) * mPerLa;
+  var sc = Math.min(660 / wM, 250 / hM);
+  var W = Math.max(Math.round(wM * sc), 120), H = Math.max(Math.round(hM * sc), 80);
+  var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%; max-width:' + W + 'px; height:auto; display:block">';
+  svg += '<rect x="0.5" y="0.5" width="' + (W - 1) + '" height="' + (H - 1) + '" fill="#fff" stroke="#bbb"/>';
+  list.forEach(function(h, i){
+    var x = ((h.lng - minLo) / (maxLo - minLo)) * W;
+    var y = (1 - (h.lat - minLa) / (maxLa - minLa)) * H;
+    svg += '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="8" fill="' + (h.out_of_candy ? "#ddd" : "#fff") + '" stroke="#000" stroke-width="1.2"></circle>';
+    svg += '<text x="' + x.toFixed(1) + '" y="' + (y + 2.6).toFixed(1) + '" text-anchor="middle" font-size="7.5" font-weight="700" fill="#000" font-family="Arial, sans-serif">' + (i + 1) + '</text>';
+  });
+  svg += '<text x="6" y="' + (H - 6) + '" font-size="7" fill="#666" font-family="Arial, sans-serif">North is up · numbers match the list below</text>';
+  svg += '</svg>';
+  return '<div class="pmapwrap">' + svg + '</div>';
+}
+
 function renderList(){
   var wrap = document.getElementById("listwrap");
   if (homes.length === 0) { wrap.innerHTML = '<div class="empty">No homes have signed up yet.<br>Be the first — takes 30 seconds! 🍬</div>'; return; }
@@ -508,11 +539,12 @@ function renderList(){
     var list = byV[v].slice();
     if (userPos) list.sort(function(a, b){ return distTo(a) - distTo(b); });
     html += '<div class="village"><h3>' + esc(v) + " · " + list.length + '</h3>';
-    list.forEach(function(h){
+    html += villagePrintMap(list);
+    list.forEach(function(h, idx){
       var d = distTo(h);
       html += '<div class="row' + (h.out_of_candy ? " outrow" : "") + '">' +
         '<span class="ic">' + typeIcon(h.home_type) + '</span>' +
-        '<div class="meta"><div class="u">' + esc(h.unit) + '</div>' +
+        '<div class="meta"><div class="u"><span class="pnum">' + (idx + 1) + '.</span>' + esc(h.unit) + '</div>' +
         '<div class="d">' + (h.handout === "door" ? "Handed out in person" : "Self-serve") + (h.details ? " · " + esc(h.details) : "") + '</div></div>' +
         entPill(h) +
         (d !== null ? '<span class="dist">' + fmtDist(d) + '</span>' : "") +

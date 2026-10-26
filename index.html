@@ -357,6 +357,16 @@ var editNotesId = null;
 var orgNotes = {};
 var adminNoteId = null;
 var userPos = null, userMarker = null, userAcc = null, geoWatchId = null, lastListPos = null;
+var listSortMode = "near"; // when location is on: "near" (distance) or "num" (house number)
+function unitNum(h){
+  var m = String(h.unit || "").match(/\d+/);
+  return m ? parseInt(m[0], 10) : Infinity;
+}
+function byUnitNum(a, b){
+  var na = unitNum(a), nb = unitNum(b);
+  if (na !== nb) return na - nb;
+  return String(a.unit).localeCompare(String(b.unit));
+}
 
 try { myHomes = JSON.parse(localStorage.getItem("jh_homes_v1") || "[]"); } catch(e){ myHomes = []; }
 try { adminCode = localStorage.getItem("jh_admin_code"); } catch(e){}
@@ -528,17 +538,24 @@ function renderList(){
   var byV = {};
   homes.forEach(function(h){ (byV[h.village] = byV[h.village] || []).push(h); });
   var vnames = Object.keys(byV);
-  if (userPos) {
+  var byDist = !!userPos && listSortMode === "near";
+  if (byDist) {
     vnames.sort(function(a, b){
       var ma = Math.min.apply(null, byV[a].map(distTo));
       var mb = Math.min.apply(null, byV[b].map(distTo));
       return ma - mb;
     });
   } else { vnames.sort(); }
-  var html = userPos ? '<p class="hint" style="margin:0 0 10px">📍 Sorted by distance from you</p>' : "";
+  var html = "";
+  if (userPos) {
+    html += '<p class="hint" style="margin:0 0 10px; display:flex; align-items:center; gap:8px; flex-wrap:wrap">' +
+      (byDist ? '📍 Sorted by distance from you' : '🔢 Sorted by house number') +
+      '<button type="button" class="mini" data-lsort="1">' + (byDist ? 'Sort by house number' : 'Sort by distance') + '</button></p>';
+  }
   vnames.forEach(function(v){
     var list = byV[v].slice();
-    if (userPos) list.sort(function(a, b){ return distTo(a) - distTo(b); });
+    if (byDist) list.sort(function(a, b){ return distTo(a) - distTo(b); });
+    else list.sort(byUnitNum);
     html += '<div class="village"><h3>' + esc(v) + " · " + list.length + '</h3>';
     html += villagePrintMap(list);
     list.forEach(function(h, idx){
@@ -978,6 +995,13 @@ document.getElementById("adminUnlock").addEventListener("click", function(){
   adminLoad();
 });
 document.getElementById("printBtn").addEventListener("click", function(){ window.print(); });
+
+document.getElementById("listwrap").addEventListener("click", function(ev){
+  var el = ev.target.closest("[data-lsort]");
+  if (!el) return;
+  listSortMode = listSortMode === "near" ? "num" : "near";
+  renderList();
+});
 
 document.getElementById("adminPanel").addEventListener("click", function(ev){
   var el = ev.target.closest("[data-aact]");

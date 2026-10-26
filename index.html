@@ -196,7 +196,8 @@ footer{padding:10px 16px calc(12px + env(safe-area-inset-bottom,0px)); color:#6f
 
   <section id="sec-list">
     <h2>Participating homes</h2>
-    <div class="locrow printrow" style="margin:0 0 10px"><button type="button" class="btn btn-ghost" id="printBtn">🖨️ Print this list</button><span class="hint">ink-friendly version for walking the neighborhood</span></div>
+    <!-- Print button hidden for now (keep display:none so the JS listener still binds; set to flex to re-enable) -->
+    <div class="locrow printrow" style="margin:0 0 10px; display:none"><button type="button" class="btn btn-ghost" id="printBtn">🖨️ Print this list</button><span class="hint">ink-friendly version for walking the neighborhood</span></div>
     <div class="printhead">🎃 Jubail Trick-or-Treat — Sat Oct 31 · 5–8 PM<div class="sub2">Printed copy — treats can run out during the night; live map &amp; status: zgauba.github.io/jubail-halloween</div></div>
     <details class="notice">
       <summary>📢 Community reminder — decorations allowed Oct 21 – Nov 10</summary>

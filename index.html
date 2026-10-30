@@ -461,6 +461,15 @@ function initMap(){
   map.on("click", function(ev){
     if (!moveMode) return;
     var mm = moveMode;
+    if (mm.adminId) {
+      rpc("jh_admin_set_location", { p_code: adminCode, p_id: mm.adminId, p_lat: ev.latlng.lat, p_lng: ev.latlng.lng })
+        .then(function(ok){
+          if (ok) { toast("Pin updated ✓"); } else { toast("Couldn't update — entry not found"); }
+          endMove(); loadHomes(); adminLoad();
+        })
+        .catch(function(){ toast("Couldn't update pin — try again"); endMove(); });
+      return;
+    }
     rpc("jh_update_location", { p_id: mm.id, p_token: mm.token, p_lat: ev.latlng.lat, p_lng: ev.latlng.lng })
       .then(function(ok){
         if (ok) { toast("Pin updated ✓"); } else { toast("Couldn't update — entry not found"); }
@@ -471,6 +480,14 @@ function initMap(){
 }
 
 function endMove(){ moveMode = null; document.getElementById("moveBanner").style.display = "none"; }
+
+function parseLatLng(raw){
+  var m = raw.match(/@(-?\d{1,2}\.\d+),(-?\d{1,3}\.\d+)/) ||
+          raw.match(/[?&](?:q|query|destination|ll)=(-?\d{1,2}\.\d+)(?:,|%2C)(-?\d{1,3}\.\d+)/) ||
+          raw.match(/(-?\d{1,2}\.\d{3,})[,\s]+(-?\d{1,3}\.\d{3,})/);
+  if (!m) return null;
+  return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
+}
 
 function renderMap(){
   if (!map) return;
@@ -709,14 +726,12 @@ document.getElementById("village").addEventListener("change", function(){
 document.getElementById("coordBtn").addEventListener("click", function(){
   var raw = document.getElementById("coordPaste").value.trim();
   if (!raw) { toast("Paste coordinates or a Google Maps link first"); return; }
-  var m = raw.match(/@(-?\d{1,2}\.\d+),(-?\d{1,3}\.\d+)/) ||
-          raw.match(/[?&](?:q|query|destination|ll)=(-?\d{1,2}\.\d+)(?:,|%2C)(-?\d{1,3}\.\d+)/) ||
-          raw.match(/(-?\d{1,2}\.\d{3,})[,\s]+(-?\d{1,3}\.\d{3,})/);
-  if (!m) {
+  var c = parseLatLng(raw);
+  if (!c) {
     toast("Couldn't read that — in Google Maps, press & hold your home, then copy the coordinates shown");
     return;
   }
-  var lat = parseFloat(m[1]), lng = parseFloat(m[2]);
+  var lat = c.lat, lng = c.lng;
   if (!(lat > 22 && lat < 27 && lng > 51 && lng < 57)) {
     toast("Those coordinates don't look like Abu Dhabi — double-check and try again");
     return;
@@ -971,6 +986,7 @@ function renderAdmin(){
         '<button class="mini" data-aact="acandy" data-id="' + h.id + '" data-out="' + (h.out_of_candy ? "0" : "1") + '">' + (h.out_of_candy ? "🍬 Restock" : "🚫 Mark out") + '</button>' +
         '<button class="mini" data-aact="anoteform" data-id="' + h.id + '">✉️ Note</button>' +
         '<button class="mini" data-aact="alink" data-id="' + h.id + '">🔗 Link</button>' +
+        '<button class="mini" data-aact="apin" data-id="' + h.id + '">📍 Pin</button>' +
         '<button class="mini" data-aact="aremove" data-id="' + h.id + '">Remove</button>') +
       (adminNoteId === h.id ?
         '<div style="width:100%; margin-top:8px">' +
@@ -1029,6 +1045,25 @@ document.getElementById("adminPanel").addEventListener("click", function(ev){
     rpc("jh_admin_new_season", { p_code: adminCode, p_label: ns })
       .then(function(){ toast("Season " + ns + " started 🎃"); didFit = false; adminLoad(); loadHomes(); })
       .catch(function(){ toast("Couldn't start new season"); });
+  } else if (act === "apin") {
+    var ph = null;
+    ((adminData && adminData.homes) || []).forEach(function(x){ if (x.id === id) ph = x; });
+    var raw = window.prompt("Fix pin for " + (ph ? ph.unit : "this home") + ":\n\nPaste their Google Maps coordinates or link — or leave this empty and press OK to tap the new spot on the map yourself.");
+    if (raw === null) return;
+    raw = raw.trim();
+    if (raw) {
+      var c = parseLatLng(raw);
+      if (!c) { toast("Couldn't read those coordinates"); return; }
+      if (!(c.lat > 22 && c.lat < 27 && c.lng > 51 && c.lng < 57)) { toast("Those coordinates don't look like Abu Dhabi — double-check"); return; }
+      rpc("jh_admin_set_location", { p_code: adminCode, p_id: id, p_lat: c.lat, p_lng: c.lng })
+        .then(function(ok){ if (ok) toast("Pin updated ✓"); else toast("Couldn't update — entry not found"); loadHomes(); adminLoad(); })
+        .catch(function(){ toast("Couldn't update — try again"); });
+    } else {
+      moveMode = { adminId: id };
+      show("map");
+      document.getElementById("moveBanner").style.display = "block";
+      if (ph && ph.lat && map) map.setView([ph.lat, ph.lng], 17);
+    }
   } else if (act === "alink") {
     var lh = null;
     ((adminData && adminData.homes) || []).forEach(function(h){ if (h.id === id) lh = h; });

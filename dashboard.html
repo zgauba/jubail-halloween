@@ -56,7 +56,7 @@ a{color:var(--c1soft)}
 <body>
 <main>
   <h1>🎃 Jubail Trick-or-Treat — Dashboard</h1>
-  <p class="sub">Halloween night, Oct 31 2026 · live home stats refresh every minute · <a href="index.html">back to the map</a></p>
+  <p class="sub">Halloween night, Oct 31 2026 · stats update hourly · <a href="index.html">back to the map</a></p>
 
   <div class="tiles">
     <div class="tile"><div class="n" id="tHomes">—</div><div class="l">homes on the map</div></div>
@@ -67,7 +67,7 @@ a{color:var(--c1soft)}
 
   <section>
     <h2>Unique visitors by hour</h2>
-    <p class="note">Traffic snapshot as of 7:15 PM — the striped bar is the hour still in progress. Peak: 175 visitors in the 5 PM hour.</p>
+    <p class="note">Traffic snapshot as of 7:20 PM — the striped bar is the hour still in progress. Peak: 175 visitors in the 5 PM hour.</p>
     <div class="vchart" id="vchart" role="img" aria-label="Unique visitors per hour from 4 AM to 7 PM, peaking at 175 in the 5 PM hour"></div>
     <div class="xlab" id="xlab"></div>
     <details><summary>View as table</summary><table id="trafficTable"><tr><th>Hour</th><th>Visitors</th><th>Loads</th></tr></table></details>
@@ -96,8 +96,8 @@ var KEY = "sb_publishable_7sJZM9wi5XmXEU0_t4e5uQ_WdfF05_s";
 
 /* ---- baked traffic snapshot (Dubai hours), as of 7:15 PM Oct 31 ---- */
 var HOURS = ["4am","5am","6am","7am","8am","9am","10am","11am","12pm","1pm","2pm","3pm","4pm","5pm","6pm","7pm"];
-var VISITORS = [1,2,3,5,8,9,14,19,18,22,20,30,68,175,144,35];
-var LOADS = [4,10,7,11,27,25,36,124,77,71,65,107,260,1889,1539,173];
+var VISITORS = [1,2,3,5,8,9,14,19,18,22,20,30,68,175,144,53];
+var LOADS = [4,10,7,11,27,25,36,124,77,71,65,107,260,1889,1539,307];
 var PARTIAL_LAST = true;
 
 var tip = document.getElementById("tip");
@@ -173,12 +173,12 @@ function refresh(){
         hbar("🎃 Non-food only", mix.non_food, tmax, "var(--c2)") +
         hbar("🍬🎃 Both", mix.both, tmax, "var(--c3)");
 
-      document.getElementById("stamp").textContent = "Live stats updated " + new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      document.getElementById("stamp").textContent = "Stats updated " + new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) + " — updates hourly; reload the page for fresh numbers";
     })
     .catch(function(){});
 }
 refresh();
-setInterval(refresh, 60000);
+setInterval(refresh, 3600000);
 </script>
 </body>
 </html>

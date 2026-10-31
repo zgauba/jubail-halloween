@@ -1013,6 +1013,36 @@ document.getElementById("adminUnlock").addEventListener("click", function(){
   adminCode = v;
   adminLoad();
 });
+/* ---- auto-reload when a new version deploys ---- */
+var pageVersion = null, pendingReload = false;
+function uiBusy(){
+  try {
+    return !!(moveMode || editNotesId || pickMarker ||
+      (document.getElementById("unit") && document.getElementById("unit").value.trim()) ||
+      (document.getElementById("details") && document.getElementById("details").value.trim()));
+  } catch(e){ return false; }
+}
+function doReloadIfSafe(){
+  if (uiBusy()) { pendingReload = true; return; }
+  window.location.reload();
+}
+function checkVersion(){
+  fetch(window.location.pathname + "?v=" + Date.now(), { method: "HEAD", cache: "no-store" })
+    .then(function(r){
+      var e = r.headers.get("etag") || r.headers.get("last-modified");
+      if (!e) return;
+      if (pageVersion === null) { pageVersion = e; return; }
+      if (e !== pageVersion) {
+        pageVersion = e;
+        if (uiBusy()) { pendingReload = true; toast("Site updated — will refresh when you're done"); }
+        else { window.location.reload(); }
+      } else if (pendingReload) { doReloadIfSafe(); }
+    })
+    .catch(function(){});
+}
+checkVersion();
+setInterval(checkVersion, 120000);
+
 function checkBroadcast(){
   rpc("jh_broadcast_get", {}).then(function(t){
     var b = document.getElementById("bcast");
